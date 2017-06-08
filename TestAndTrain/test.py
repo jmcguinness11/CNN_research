@@ -58,6 +58,10 @@ def MakeConvNet(Input, Size):
 
 				ReLU = tf.nn.relu(ConvResult)
 
+				#TODO - figure out why the following isn't working:
+				#ReLU = tf.maximum(-1 + 0*ConvResult, ConvResult) #shifted ReLU -1
+				#ReLU = tf.minimum(1 + 0*ReLU, ReLU)
+
 				# leaky ReLU
 				#alpha = 0.01
 				#ReLU = tf.maximum(alpha * ConvResult, ConvResult)
@@ -72,6 +76,9 @@ OutShape = OutMaps.shape
 OneMap = tf.ones([BatchLength, OutShape[1], OutShape[2], OutShape[3]], tf.float32)
 
 with tf.name_scope('accuracy'):
+		
+		OutMaps = OutMaps - 1
+		
 		#Zeros = tf.zeros(OutShape, tf.float32)
 		NegOnes = tf.ones(OutShape, tf.float32) * -1
 		Ones = tf.ones(OutShape, tf.float32)
@@ -81,10 +88,10 @@ with tf.name_scope('accuracy'):
 		sqdiff1 = tf.square(tf.subtract(Ones, OutMaps))
 
 		#rdmdiff0 = tf.reduce_mean(sqdiff0, [1, 2, 3])
-		rdmdiffneg1 = tf.reduce_mean(sqdiffneg1, [1, 2, 3])
-		rdmdiff1 = tf.reduce_mean(sqdiff1, [1, 2, 3])
+		diffneg1 = tf.reduce_mean(sqdiffneg1, [1, 2, 3])
+		diffpos1 = tf.reduce_mean(sqdiff1, [1, 2, 3])
 
-		predictions = tf.argmin([rdmdiffneg1, rdmdiff1], 0)
+		predictions = tf.argmin([diffneg1, diffpos1], 0)
 		correctPredictions = tf.equal(tf.cast(predictions, tf.int32), InputLabels)
 
 		Accuracy = tf.reduce_mean(tf.cast(correctPredictions, tf.float32))
@@ -132,10 +139,10 @@ with tf.Session(config = conf) as Sess:
 		Label = np.reshape(Label, (BatchLength))
 
 		# execute the session
-		Summary, Acc, RDMN1, RDM1, P = Sess.run([SummaryOp, Accuracy, rdmdiffneg1, rdmdiff1, predictions], feed_dict = {InputData: Data, InputLabels: Label})
+		Summary, Acc, diff_neg_one, diff_pos_one, P = Sess.run([SummaryOp, Accuracy, diffneg1, diffpos1, predictions], feed_dict = {InputData: Data, InputLabels: Label})
 
 		for i in range(BatchLength):
-			f.write(str(Label[i]) + ", " + str(RDMN1[i]) + ", " + str(RDM1[i]) + ", "+ str(P[i]) + "\n")
+			f.write(str(Label[i]) + ", " + str(diff_neg_one[i]) + ", " + str(diff_pos_one[i]) + ", "+ str(P[i]) + "\n")
 
 		#SummaryWriter.add_summary(Summary, Step)
 
