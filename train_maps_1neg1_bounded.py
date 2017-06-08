@@ -24,7 +24,7 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 2 #number of output classes
-EvalFreq=100 #evaluate on every 100th iteration
+EvalFreq=500 #evaluate on every 100th iteration
 
 #load data
 directory = './MNIST_data/'
@@ -66,11 +66,15 @@ def MakeConvNet(Input,Size):
 			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
 			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
 
-			ReLU = tf.nn.relu(ConvResult)
+			#CeNN Nonlinearity [-1, 1]
 			#leaky ReLU
-			#alpha=0.01
+			alpha=0.01
 			#ReLU=tf.maximum(alpha*ConvResult,ConvResult)
-
+			
+			ReLU=tf.maximum(-1 + alpha*(ConvResult+1),ConvResult)
+			ReLU=tf.minimum(1 + alpha*(ReLU-1),ReLU)
+			
+			
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,3,3,1],strides=[1,1,1,1],padding='SAME')
 
 	return CurrentInput
@@ -86,10 +90,8 @@ print(OutShape)
 # Define loss and optimizer
 with tf.name_scope('loss'):
 		LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.argmax(OneHotLabels,1),1),1),1)  #32
-		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
-		#GTMap= (tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )*2)-1
-		print(LabelIndices.shape, OneHotLabels.shape, GTMap.shape)
-		#import lakjfnds
+		#GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
+		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )*2-1
 		GTMap = tf.cast(GTMap,tf.float32)
 		DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
 		Loss=tf.reduce_sum(DiffMap)
@@ -102,13 +104,13 @@ with tf.name_scope('optimizer'):
 			#Optimizer = tf.train.GradientDescentOptimizer(LearningRate).minimize(Loss)
 
 with tf.name_scope('accuracy'):	  
-		Zeros = tf.zeros(OutShape, tf.float32)
-		#Zeros = tf.ones(OutShape, tf.float32)*-1
+		#Zeros = tf.zeros(OutShape, tf.float32)
+		Zeros = tf.ones(OutShape, tf.float32)*-1
 		Ones = tf.ones(OutShape, tf.float32)
-		SquarredDiffZero = tf.square(tf.subtract(OutMaps, Zeros))
-		SquarredDiffOne = tf.square(tf.subtract(OutMaps, Ones))
-		AvgDiffZero = tf.reduce_mean(SquarredDiffZero, [1,2,3])
-		AvgDiffOne = tf.reduce_mean(SquarredDiffOne, [1,2,3])
+		SquaredDiffZero = tf.square(tf.subtract(OutMaps, Zeros))
+		SquaredDiffOne = tf.square(tf.subtract(OutMaps, Ones))
+		AvgDiffZero = tf.reduce_mean(SquaredDiffZero, [1,2,3])
+		AvgDiffOne = tf.reduce_mean(SquaredDiffOne, [1,2,3])
 		Pred = tf.argmin([AvgDiffZero,AvgDiffOne],0)
 		CorrectPredictions = tf.equal(tf.cast(Pred,tf.int32), InputLabels)
 		Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
@@ -155,17 +157,21 @@ with tf.Session() as Sess:
 		
 
 		#execute the session
-		Summary,_,L,A,P = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred], feed_dict={InputData: Data, InputLabels: Label})
+		Summary,_,L,A,P, om = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred, OutMaps], feed_dict={InputData: Data, InputLabels: Label})
 		#train accuracy
 		#print("Iteration: "+str(Step))
-		#print("Loss:" + str(L))
-		#print("Accuracy:" + str(A))
-		print("Pred:" + str(P))
+		#print("Pred:" + str(P))
+		
+		print(om[0,0,0,:])
 
+		if not Step % 50:
+			print("Iteration: " + str(Step))
+			print("Loss: " + str(L))
+			print("Accuracy: " + str(A))
 		
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
-			TotalAcc=0;
+			TotalAcc=0
 			Data=np.zeros([BatchLength]+Size)
 			for i in range(0,TestData.shape[0],BatchLength):
 				if TestData.shape[0] - i < 25:
@@ -176,9 +182,6 @@ with tf.Session() as Sess:
 				for i in range(len(P)):
 					if P[i]==Label[i]:
 						TotalAcc+=1
-			print("Iteration: " + str(Step))
-			print("Loss: " + str(L))
-			print("Accuracy: " + str(A))
 			print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
 		#print("Loss:" + str(L))
 		

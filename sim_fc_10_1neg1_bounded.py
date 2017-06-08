@@ -19,26 +19,20 @@ if tf.gfile.Exists(FLAGS.summary_dir):
 
 
 #Parameters
-BatchLength=25 #32 images are in a minibatch
+BatchLength=25 #25 images are in a minibatch
 Size=[28, 28, 1] #Input img will be resized to this size
-NumIteration=200000;
+NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
-NumClasses = 2 #number of output classes
-EvalFreq=100 #evaluate on every 100th iteration
+NumClasses = 10 #number of output classes
+EvalFreq=500 #evaluate on every 100th iteration
 
 #load data
-directory = './MNIST_data/'
-TrainData= np.load('{}partial_train_images.npy'.format(directory))
-TrainLabels=np.load('{}partial_train_labels.npy'.format(directory))
-TestData= np.load('{}partial_test_images.npy'.format(directory))
-TestLabels=np.load('{}partial_test_labels.npy'.format(directory))
+directory = '/Users/johnmcguinness/Dropbox/Notre Dame/Budapest/CNN_research/MNIST_data/'
+TrainData= np.load('{}full_train_images.npy'.format(directory))
+TrainLabels=np.load('{}full_train_labels.npy'.format(directory))
+TestData= np.load('{}full_test_images.npy'.format(directory))
+TestLabels=np.load('{}full_test_labels.npy'.format(directory))
 
-
-#reformat data to our needs
-TrainLabels[TrainLabels == 6] = 0
-TrainLabels[TrainLabels == 9] = 1
-TestLabels[TestLabels == 6] = 0
-TestLabels[TestLabels == 9] = 1
 
 # Create tensorflow graph
 InputData = tf.placeholder(tf.float32, [BatchLength, Size[0], Size[1], Size[2] ]) #network input
@@ -46,11 +40,11 @@ InputLabels = tf.placeholder(tf.int32, [BatchLength]) #desired network output
 OneHotLabels = tf.one_hot(InputLabels,NumClasses)
 KeepProb = tf.placeholder(tf.float32) #dropout (keep probability -currently not used)
 
-NumKernels = [4,4,4,1]
+NumKernels = [32,32,32,32,10]
 def MakeConvNet(Input,Size):
 	CurrentInput = Input
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
-	for i in range(4): #number of layers
+	for i in range(5): #number of layers
 		with tf.variable_scope('conv'+str(i)):
 			NumKernel=NumKernels[i]
 			# W = tf.get_variable('W',[3,3,CurrentFilters,NumKernel])
@@ -66,10 +60,11 @@ def MakeConvNet(Input,Size):
 			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
 			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
 
-			ReLU = tf.nn.relu(ConvResult)
 			#leaky ReLU
-			#alpha=0.01
-			#ReLU=tf.maximum(alpha*ConvResult,ConvResult)
+			alpha=0.01
+			#alpha=0
+			ReLU=tf.maximum(-1 + alpha*(ConvResult+1),ConvResult)
+			ReLU=tf.minimum(1 + alpha*(ReLU-1),ReLU)
 
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,3,3,1],strides=[1,1,1,1],padding='SAME')
 
@@ -81,15 +76,19 @@ OutMaps = MakeConvNet(InputData, Size)
 
 OutShape= OutMaps.get_shape()
 print(OutShape)
+#import afdsj
+
 
 
 # Define loss and optimizer
 with tf.name_scope('loss'):
-		LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.argmax(OneHotLabels,1),1),1),1)  #32
-		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
-		#GTMap= (tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )*2)-1
+		#LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.argmax(OneHotLabels,1),1),1),1)  #32		
+		LabelIndices=tf.expand_dims(tf.expand_dims(OneHotLabels,1),1)  #32
+	
+		#GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
+		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
 		print(LabelIndices.shape, OneHotLabels.shape, GTMap.shape)
-		#import lakjfnds
+
 		GTMap = tf.cast(GTMap,tf.float32)
 		DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
 		Loss=tf.reduce_sum(DiffMap)
@@ -102,16 +101,31 @@ with tf.name_scope('optimizer'):
 			#Optimizer = tf.train.GradientDescentOptimizer(LearningRate).minimize(Loss)
 
 with tf.name_scope('accuracy'):	  
-		Zeros = tf.zeros(OutShape, tf.float32)
-		#Zeros = tf.ones(OutShape, tf.float32)*-1
+
+
+
+		Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
 		Ones = tf.ones(OutShape, tf.float32)
-		SquarredDiffZero = tf.square(tf.subtract(OutMaps, Zeros))
-		SquarredDiffOne = tf.square(tf.subtract(OutMaps, Ones))
-		AvgDiffZero = tf.reduce_mean(SquarredDiffZero, [1,2,3])
-		AvgDiffOne = tf.reduce_mean(SquarredDiffOne, [1,2,3])
-		Pred = tf.argmin([AvgDiffZero,AvgDiffOne],0)
-		CorrectPredictions = tf.equal(tf.cast(Pred,tf.int32), InputLabels)
+
+		DiffZeros = tf.reduce_mean(tf.subtract(Zeros, OutMaps), [1,2])
+		DiffOnes = tf.reduce_mean(tf.subtract(Ones, OutMaps), [1,2])
+
+		DiffList = []
+		for k in range(NumClasses):
+			x = DiffZeros[:,k]
+			print(x.shape)
+			y = tf.reduce_sum(DiffZeros, 1)
+			print(y.shape)
+			DiffList.append(tf.square(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k]))
+
+
+		Diffs = tf.stack(DiffList)
+		print(Diffs.shape)
+		Pred = tf.argmin(Diffs,0)
+		print(Pred)
+		CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
 		Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
+
 
 
 
@@ -136,9 +150,12 @@ tf.summary.scalar("accuracy", Accuracy)
 
 SummaryOp = tf.summary.merge_all()
 
+# Launch the session with default graph
+conf = tf.ConfigProto(allow_soft_placement=True)
+conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
 
 # Launch the session with default graph
-with tf.Session() as Sess:
+with tf.Session(config=conf) as Sess:
 	Sess.run(Init)
 	SummaryWriter = tf.summary.FileWriter(FLAGS.summary_dir,tf.get_default_graph())
 	Saver = tf.train.Saver()
@@ -155,13 +172,25 @@ with tf.Session() as Sess:
 		
 
 		#execute the session
-		Summary,_,L,A,P = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred], feed_dict={InputData: Data, InputLabels: Label})
+		Summary,_,L,A,P, labels, CP, om = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred, InputLabels, CorrectPredictions, OutMaps], feed_dict={InputData: Data, InputLabels: Label})
+
+		print(om[0,0,0,:])
+		'''
+		print('')
+		print('Correct:\t', CP[0:5])
+		print('Preds:\t', P[0:5])
+		print('Labels:\t', labels[0:5])
+		print('')
 		#train accuracy
 		#print("Iteration: "+str(Step))
 		#print("Loss:" + str(L))
 		#print("Accuracy:" + str(A))
-		print("Pred:" + str(P))
-
+		#print("Pred:" + str(P))
+		'''
+		if not Step % 50:
+			print("Iteration: " + str(Step))
+			print("Loss: " + str(L))
+			print("Accuracy: " + str(A))
 		
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
@@ -176,9 +205,7 @@ with tf.Session() as Sess:
 				for i in range(len(P)):
 					if P[i]==Label[i]:
 						TotalAcc+=1
-			print("Iteration: " + str(Step))
-			print("Loss: " + str(L))
-			print("Accuracy: " + str(A))
+
 			print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
 		#print("Loss:" + str(L))
 		
