@@ -160,6 +160,7 @@ conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
 
 with tf.Session(config=conf) as Sess:
 	Sess.run(Init)
+	print('Initialized')
 	SummaryWriter = tf.summary.FileWriter(FLAGS.summary_dir,tf.get_default_graph())
 	Saver = tf.train.Saver()
 	
@@ -177,10 +178,10 @@ with tf.Session(config=conf) as Sess:
 
 		# need to randomly select the query
 		# need to randomly select the support elements
-		SupportLabelsList = [[]]
-		SupportDataList = [[]]
-		QueryDataList = [[]]
-		QueryLabelList = [[]]
+		SupportLabelsList = []
+		SupportDataList = []
+		QueryDataList = []
+		QueryLabelList = []
 		for i in range(BatchLength):
 			QueryClass = random.randint(0, NumClasses - 1)
 			QueryIndices = np.argwhere(TrainLabels == QueryClass)
@@ -189,17 +190,32 @@ with tf.Session(config=conf) as Sess:
 			QueryDataList.append(TrainData[QueryIndex])
 			QueryLabelList.append(TrainLabels[QueryIndex])
 
+			SupportLabelsList.append([])
+			SupportDataList.append([])
+
 			for j in range(NumClasses):
+
+				#the dimensions of tmp are wrong
+				#we want [2, 28, 28, 1], have [2, 1, 28, 28, 1]
+
+				tmp = np.asarray(TrainData[QueryIndices[1 : 3]])
+				print(tmp.shape, 'ts')
+
+
+
 				if (j == QueryClass):
-					SupportLabelsList[i].append(TrainLabels[QueryIndices[1 : 3]])
-					SupportDataList[i].append(TrainData[QueryIndices[1 : 3]])
+					SupportLabelsList[i].append(TrainLabels[QueryIndices[1 : 3]][0])
+					SupportDataList[i].append(TrainData[QueryIndices[1 : 3]][0])
 				else:
 					SupportIndices = np.argwhere(TrainLabels == j)
 					SupportDataList[i].append(TrainData[SupportIndices[0 : NumSupportsPerClass]])
 					SupportLabelsList[i].append(TrainLabels[SupportIndices[0 : NumSupportsPerClass]])
 
-		QueryData = tf.stack(QueryDataList)
-		print(QueryData.shape)
+		tmp = np.asarray(SupportDataList)
+		print(tmp.shape)
+
+		SupportDataList = tf.stack(QueryDataList)
+		print(SupportDataList)
 
 		Summary,_,Acc,L,P = Sess.run([SummaryOp,Optimizer, Accuracy, Loss,PredWeights], feed_dict={InputData: Query, InputLabels: Label})
 
