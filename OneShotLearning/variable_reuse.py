@@ -245,7 +245,7 @@ with tf.Session(config=conf) as Sess:
 			print("Accuracy:" + str(Acc))
 			print("Loss:" + str(L))
 
-		
+		'''
 		#independent test accuracy
 		if not (Step%EvalFreq) or Step == NumIteration-1:			
 			TotalAcc=0;
@@ -261,7 +261,7 @@ with tf.Session(config=conf) as Sess:
 		
 		#print("Loss:" + str(L))
 		SummaryWriter.add_summary(Summary,Step)
-
+		'''
 		
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))
