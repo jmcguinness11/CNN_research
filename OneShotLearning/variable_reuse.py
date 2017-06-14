@@ -59,6 +59,7 @@ def MakeConvNet(Input,Size, First=False):
 			CurrentFilters = NumKernel
 			ConvResult = tf.nn.conv2d(CurrentInput,W,strides=[1,1,1,1],padding='VALID') #VALID, SAME
 			ConvResult= tf.add(ConvResult, Bias)
+			
 			#add batch normalization
 			#beta = tf.get_variable('beta',[NumKernel],initializer=tf.constant_initializer(0.0))
 			#gamma = tf.get_variable('gamma',[NumKernel],initializer=tf.constant_initializer(1.0))
@@ -81,19 +82,20 @@ def MakeConvNet(Input,Size, First=False):
 
 with tf.name_scope('network'):
 	EncodedQuery = MakeConvNet(InputData, Size, First=True)
+	print('EQ:', EncodedQuery.shape)
 	SupportList = [] 
 	QueryList = []
 	for i in range(NumClasses):
-		same_class_supports = []
+		
 		for k in range(NumSupportsPerClass):
-			same_class_supports.append(MakeConvNet(SupportData[:,k,i,:,:,:], Size))
-		#aggregate support elements from same class
-		same_class_supports = tf.stack(same_class_supports)
-		SupportList.append(tf.reduce_sum(same_class_supports, 0))
-		QueryList.append(EncodedQuery) 
+			SupportList.append(MakeConvNet(SupportData[:,k,i,:,:,:], Size))
+			QueryList.append(EncodedQuery) 
+		
 	
 	QueryRepeated = tf.stack(QueryList)
 	Supports = tf.stack(SupportList)
+	print(Supports.shape)
+
 
 
 
@@ -114,22 +116,35 @@ with tf.name_scope('loss'):
 	# result
 	CosSim = DotProduct / (MagQuery * MagSupport)
 
-	print(CosSim)
+	#reshape to condense supports from the same class to one thing
+	CosSim = tf.reshape(CosSim, [NumClasses, NumSupportsPerClass, -1])
+	CosSim = tf.transpose(tf.reduce_sum(CosSim, 1))
 
+	#apply softmax to cosine similarities
+	Probabilities = tf.nn.softmax(CosSim)
+
+	
 	#TODO  THIS MIGHT NOT WORK
 	#TODO
 	Loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(OneHotLabels,CosSim))
 	#TODO
 	#TODO
 
+
+
+
+
+
+
+
 with tf.name_scope('optimizer'):	
 	Optimizer = tf.train.AdamOptimizer(LearningRate).minimize(Loss)
 
-'''
+
 with tf.name_scope('accuracy'):	  
-	CorrectPredictions = tf.equal(tf.argmax(PredWeights, 1), tf.argmax(OneHotLabels, 1))
+	CorrectPredictions = tf.equal(tf.argmax(Probabilities, 1), tf.argmax(OneHotLabels, 1))
 	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions, tf.float32))
-'''	  
+  
 
 
 # Initializing the variables
@@ -172,16 +187,17 @@ with tf.Session(config=conf) as Sess:
 		permutation = np.random.permutation(TrainData.shape[0])
 		TrainLabels = TrainLabels[permutation]
 		TrainData = TrainData[permutation]
-		Data = TrainData[k : k + BatchLength, :, :, :]
-		Label = TrainLabels[k : k + BatchLength]
-		Label = np.reshape(Label, (BatchLength))
+		
+		#Data = TrainData[0 :  BatchLength, :, :, :]
+		#Label = TrainLabels[0 : BatchLength]
+		#Label = np.reshape(Label, (BatchLength))
 
 		# need to randomly select the query
 		# need to randomly select the support elements
-		SupportLabelsList = []
 		SupportDataList = []
 		QueryDataList = []
 		QueryLabelList = []
+		
 		for i in range(BatchLength):
 			QueryClass = random.randint(0, NumClasses - 1)
 			QueryIndices = np.argwhere(TrainLabels == QueryClass)
@@ -190,42 +206,38 @@ with tf.Session(config=conf) as Sess:
 			QueryDataList.append(TrainData[QueryIndex])
 			QueryLabelList.append(TrainLabels[QueryIndex])
 
-			SupportLabelsList.append([])
 			SupportDataList.append([])
 
 			for j in range(NumClasses):
 
-				#the dimensions of tmp are wrong
-				#we want [2, 28, 28, 1], have [2, 1, 28, 28, 1]
-
-				tmp = np.asarray(TrainData[QueryIndices[1 : 3]])
-				print(tmp.shape, 'ts')
-
-
-
 				if (j == QueryClass):
-					SupportLabelsList[i].append(TrainLabels[QueryIndices[1 : 3]][0])
-					SupportDataList[i].append(TrainData[QueryIndices[1 : 3]][0])
+					SupportDataList[i].append(np.squeeze(TrainData[QueryIndices[1 : 3]], axis=1))
 				else:
 					SupportIndices = np.argwhere(TrainLabels == j)
-					SupportDataList[i].append(TrainData[SupportIndices[0 : NumSupportsPerClass]])
-					SupportLabelsList[i].append(TrainLabels[SupportIndices[0 : NumSupportsPerClass]])
+					SupportDataList[i].append(np.squeeze(TrainData[SupportIndices[0 : NumSupportsPerClass]], axis=1))
 
-		tmp = np.asarray(SupportDataList)
-		print(tmp.shape)
+		
+		QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
+		SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
+		Label = np.reshape(QueryLabelList, [BatchLength])
 
-		SupportDataList = tf.stack(QueryDataList)
-		print(SupportDataList)
+		Summary,_,Acc,L, prob = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Probabilities],
+							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
+		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-		Summary,_,Acc,L,P = Sess.run([SummaryOp,Optimizer, Accuracy, Loss,PredWeights], feed_dict={InputData: Query, InputLabels: Label})
+		
+		print(prob[0])
+		print('Label', Label[0])
+
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%100)==0:
+		if (Step%1)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
 			print("Loss:" + str(L))
 
+		'''
 		#independent test accuracy
 		if not (Step%EvalFreq) or Step == NumIteration-1:			
 			TotalAcc=0;
@@ -242,6 +254,7 @@ with tf.Session(config=conf) as Sess:
 		#print("Loss:" + str(L))
 		SummaryWriter.add_summary(Summary,Step)
 
+		'''
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))
 
