@@ -25,15 +25,14 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-NumSupportsPerClass = 2 
-Dropout=0.5 #droupout parameters in the FNN layer - currently not used
-EvalFreq=1000 #evaluate on every 100th iteration
+NumSupportsPerClass = 1
+EvalFreq=10 #evaluate on every 100th iteration
 
 #load data
 directory = '../MNIST_data/'
-TrainData= np.load('{}full_train_images.npy'.format(directory))
-TrainLabels=np.load('{}full_train_labels.npy'.format(directory))
-TestData= np.load('{}full_test_images.npy'.format(directory))
+TrainData= np.load('{}oneshot_train_images.npy'.format(directory))
+TrainLabels=np.load('{}oneshot_train_labels.npy'.format(directory))
+TestData= np.load('{}partial_test_images.npy'.format(directory))
 TestLabels=np.load('{}full_test_labels.npy'.format(directory))
 
 
@@ -83,6 +82,7 @@ def MakeConvNet(Input,Size, First=False):
 with tf.name_scope('network'):
 	EncodedQuery = MakeConvNet(InputData, Size, First=True)
 	print('EQ:', EncodedQuery.shape)
+	
 	SupportList = [] 
 	QueryList = []
 	for i in range(NumClasses):
@@ -115,6 +115,7 @@ with tf.name_scope('loss'):
 	MagSupport = tf.sqrt(tf.reduce_sum(tf.square(Supports), [2,3,4]))
 	# result
 	CosSim = DotProduct / (MagQuery * MagSupport)
+
 
 	#reshape to condense supports from the same class to one thing
 	CosSim = tf.reshape(CosSim, [NumClasses, NumSupportsPerClass, -1])
@@ -182,15 +183,14 @@ with tf.Session(config=conf) as Sess:
 	# Keep training until reach max iterations - other stopping criterion could be added
 	for Step in range(1,NumIteration):
 		
+		
+
 		# create train batch - select random elements for training
 		#TrainIndices = random.sample(range(TrainData.shape[0]), BatchLength)
 		permutation = np.random.permutation(TrainData.shape[0])
 		TrainLabels = TrainLabels[permutation]
 		TrainData = TrainData[permutation]
-		
-		#Data = TrainData[0 :  BatchLength, :, :, :]
-		#Label = TrainLabels[0 : BatchLength]
-		#Label = np.reshape(Label, (BatchLength))
+
 
 		# need to randomly select the query
 		# need to randomly select the support elements
@@ -211,7 +211,7 @@ with tf.Session(config=conf) as Sess:
 			for j in range(NumClasses):
 
 				if (j == QueryClass):
-					SupportDataList[i].append(np.squeeze(TrainData[QueryIndices[1 : 3]], axis=1))
+					SupportDataList[i].append(np.squeeze(TrainData[QueryIndices[1 : 1+NumSupportsPerClass]], axis=1))
 				else:
 					SupportIndices = np.argwhere(TrainLabels == j)
 					SupportDataList[i].append(np.squeeze(TrainData[SupportIndices[0 : NumSupportsPerClass]], axis=1))
@@ -221,23 +221,31 @@ with tf.Session(config=conf) as Sess:
 		SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
 		Label = np.reshape(QueryLabelList, [BatchLength])
 
+		
+
+
+
+
+
+
+
 		Summary,_,Acc,L, prob = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Probabilities],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
 		
-		print(prob[0])
-		print('Label', Label[0])
+		#print(prob[0])
+		#print('Label', Label[0])
 
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%1)==0:
+		if (Step%5)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
 			print("Loss:" + str(L))
 
-		'''
+		
 		#independent test accuracy
 		if not (Step%EvalFreq) or Step == NumIteration-1:			
 			TotalAcc=0;
@@ -245,7 +253,7 @@ with tf.Session(config=conf) as Sess:
 			for i in range(0,TestData.shape[0]):
 				Data[0]=TestData[i]
 				Label=TestLabels[i]
-				response = Sess.run([PredWeights], feed_dict={InputData: Data})
+				response = Sess.run([Probabilities], feed_dict={InputData: Data, SupportData: SupportDataList})
 				#print(response)
 				if np.argmax(response)==Label:
 					TotalAcc+=1
@@ -254,7 +262,7 @@ with tf.Session(config=conf) as Sess:
 		#print("Loss:" + str(L))
 		SummaryWriter.add_summary(Summary,Step)
 
-		'''
+		
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))
 
