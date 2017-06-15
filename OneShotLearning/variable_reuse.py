@@ -25,14 +25,14 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-NumSupportsPerClass = 1
+NumSupportsPerClass = 2
 EvalFreq=10 #evaluate on every 100th iteration
 
 #load data
 directory = '../MNIST_data/'
 TrainData= np.load('{}oneshot_train_images.npy'.format(directory))
 TrainLabels=np.load('{}oneshot_train_labels.npy'.format(directory))
-TestData= np.load('{}partial_test_images.npy'.format(directory))
+TestData= np.load('{}full_test_images.npy'.format(directory))
 TestLabels=np.load('{}full_test_labels.npy'.format(directory))
 
 
@@ -231,6 +231,7 @@ with tf.Session(config=conf) as Sess:
 
 		Summary,_,Acc,L, prob = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Probabilities],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
+
 		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
 		
@@ -244,6 +245,24 @@ with tf.Session(config=conf) as Sess:
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
 			print("Loss:" + str(L))
+
+		#independent test accuracy
+		if not Step % EvalFreq:
+			print("\nTesting Independent set:")
+			ct = 0
+			Acc = 0
+			for k in range(0, TestData.shape[0], BatchLength):
+				Data = TestData[k:k+BatchLength]
+				Labels = TestLabels[k:k+BatchLength]
+				acc = Sess.run(Accuracy, 
+						feed_dict = {InputData: Data, InputLabels: Labels, SupportData: SupportDataList})
+				#print("Independent Batch:", acc)
+				#print(type(acc), type(Acc))
+				Acc += acc
+				ct += 1
+			Acc = Acc / ct
+			print("Independent Test set:", Acc, '\n')
+
 
 		'''
 		#independent test accuracy
