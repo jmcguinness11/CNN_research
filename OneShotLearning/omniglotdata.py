@@ -5,6 +5,8 @@ import os
 import random
 from scipy import misc
 
+data_location = '../Omniglot_data/'
+
 # function that makes a list of all of the alphabet / character folders
 def save_dir_list(data_dir, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
     path_back = "{}/Omniglot_data/images_background/".format(data_dir)
@@ -51,13 +53,13 @@ def save_dir_list(data_dir, train_size=5, test_size=15, num_classes=5, Size=[105
             train_data[k,i,:,:] = misc.imread(train_set[k,i])
     #test set
     print('Reading in test set...')
-    test_data = np.zeros([test_set.shape[0], train_set.shape[1], Size[0], Size[1]])
+    test_data = np.zeros([test_set.shape[0], test_set.shape[1], Size[0], Size[1]])
     for k in range(test_data.shape[0]):
         for i in range(test_data.shape[1]):
             test_data[k,i,:,:] = misc.imread(test_set[k,i])
 
-    np.save('omniglot_train', train_data)
-    np.save('omniglot_test', test_data)
+    np.save('{}omniglot_train'.format(data_location), train_data)
+    np.save('{}omniglot_test'.format(data_location), test_data)
     return train_data, test_data
 
 
@@ -65,8 +67,9 @@ def save_dir_list(data_dir, train_size=5, test_size=15, num_classes=5, Size=[105
 
 def get_train_data(train_data, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
 
-    class_nums = random.sample(range(0, len(train_data[0])), num_classes)
+    class_nums = random.sample(range(0, train_data.shape[0]), num_classes)
     train_data = train_data[class_nums]
+    train_data = np.reshape(train_data, [train_size*num_classes, Size[0], Size[1]])
 
     train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
 
@@ -74,8 +77,10 @@ def get_train_data(train_data, train_size=5, test_size=15, num_classes=5, Size=[
 
 def get_test_data(test_data, train_size=5, test_size=15, num_classes=5, Size=[105,105]):
 
-    class_nums = random.sample(range(0, len(test_data[0])), num_classes)
+    class_nums = random.sample(range(0, test_data.shape[0]), num_classes)
     test_data = test_data[class_nums]
+    test_data = np.reshape(test_data, [test_size*num_classes, Size[0], Size[1]])
+
 
     test_labels = np.asarray([idx / train_size for idx in range(test_size * num_classes)])
 
@@ -83,11 +88,14 @@ def get_test_data(test_data, train_size=5, test_size=15, num_classes=5, Size=[10
 
 #all_train_data, all_test_data = make_dir_list('..')
 #save_dir_list('..')
-all_train_data = np.load('omniglot_train.npy')
+
+
+all_train_data = np.load('{}omniglot_train.npy'.format(data_location))
 train_set, train_labels = get_train_data(all_train_data)
-all_test_data = np.load('omniglot_test.npy')
+all_test_data = np.load('{}omniglot_test.npy'.format(data_location))
 test_set, test_labels = get_test_data(all_test_data)
 
+print train_set.shape
 
 
 
