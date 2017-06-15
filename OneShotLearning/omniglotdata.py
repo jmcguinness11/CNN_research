@@ -6,9 +6,9 @@ import random
 from scipy import misc
 
 # function that makes a list of all of the alphabet / character folders
-def make_dir_list(data_dir):
-    path_back = "{}/omniglot/images_background/".format(data_dir)
-    path_eval = "{}/omniglot/images_evaluation/".format(data_dir)
+def save_dir_list(data_dir, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
+    path_back = "{}/Omniglot_data/images_background/".format(data_dir)
+    path_eval = "{}/Omniglot_data/images_evaluation/".format(data_dir)
     alphadirs_back = [directory for directory in os.listdir(path_back) if not directory.startswith('.')]
     alphadirs_eval = [directory for directory in os.listdir(path_eval) if not directory.startswith('.')]
 
@@ -26,54 +26,70 @@ def make_dir_list(data_dir):
         for character in chardirs:
             datalist.append("{}{}/".format(charpath, character))
 
-    return datalist
+    datalist = np.asarray(datalist)
+
+    images = []
+    for dir_name in datalist:
+        images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
+    
+    images = np.asarray(images)
+
+
+    #split images into train and test sets
+    train_set = images[:, 0 : train_size]
+    #train_set = np.reshape(train_set, len(train_set) * train_size)
+    test_set = images[:, train_size : train_size + test_size]
+    #test_set = np.reshape(test_set, len(test_set) * test_size)
+
+    
+    #read in the images and store
+    #train set
+    print('Reading in train set...')
+    train_data = np.zeros([train_set.shape[0], train_set.shape[1], Size[0], Size[1]])
+    for k in range(train_data.shape[0]):
+        for i in range(train_data.shape[1]):
+            train_data[k,i,:,:] = misc.imread(train_set[k,i])
+    #test set
+    print('Reading in test set...')
+    test_data = np.zeros([test_set.shape[0], train_set.shape[1], Size[0], Size[1]])
+    for k in range(test_data.shape[0]):
+        for i in range(test_data.shape[1]):
+            test_data[k,i,:,:] = misc.imread(test_set[k,i])
+
+    np.save('omniglot_train', train_data)
+    np.save('omniglot_test', test_data)
+    return train_data, test_data
+
 
 # the following code will randomly select five of these directories to use for testing and training
 
-def get_train_data(datalist, train_size=5, test_size=15, num_classes=5):
+def get_train_data(train_data, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
 
-    class_nums = random.sample(range(0, len(datalist)), num_classes)
-    datalist = np.asarray(datalist)
-    dir_names = datalist[class_nums]
+    class_nums = random.sample(range(0, len(train_data[0])), num_classes)
+    train_data = train_data[class_nums]
 
-    images = []
-
-    for dir_name in dir_names:
-        images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
-
-    images = np.asarray(images)
-
-    train_set = images[:, 0 : train_size]
-    train_set = np.reshape(train_set, num_classes * train_size)
-    test_set = images[:, train_size : train_size + test_size]
-    test_set = np.reshape(test_set, num_classes * test_size)
-
-    test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
     train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
 
-    return train_set, train_labels
+    return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=5):
+def get_test_data(test_data, train_size=5, test_size=15, num_classes=5, Size=[105,105]):
+
+    class_nums = random.sample(range(0, len(test_data[0])), num_classes)
+    test_data = test_data[class_nums]
+
+    test_labels = np.asarray([idx / train_size for idx in range(test_size * num_classes)])
+
+    return test_data, test_labels
+
+#all_train_data, all_test_data = make_dir_list('..')
+#save_dir_list('..')
+all_train_data = np.load('omniglot_train.npy')
+train_set, train_labels = get_train_data(all_train_data)
+all_test_data = np.load('omniglot_test.npy')
+test_set, test_labels = get_test_data(all_test_data)
 
 
-    class_nums = random.sample(range(0, len(datalist)), num_classes)
-    datalist = np.asarray(datalist)
-    dir_names = datalist[class_nums]
 
-    images = []
 
-    for dir_name in dir_names:
-        images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
 
-    images = np.asarray(images)
 
-    test_set = images[:, train_size : train_size + test_size]
-    test_set = np.reshape(test_set, num_classes * test_size)
-
-    test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
-
-    return test_set, test_labels
-
-datalist = make_dir_list('..')
-train_set, train_labels = get_train_data(datalist)
-print train_set
