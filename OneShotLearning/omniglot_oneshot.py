@@ -29,7 +29,7 @@ NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
 NumSupportsPerClass = 2
-EvalFreq=100000 #evaluate on every 100th iteration
+EvalFreq=100 #evaluate on every 100th iteration
 
 
 # Placeholders
@@ -315,7 +315,7 @@ with tf.Session(config=conf) as Sess:
 
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%1)==0:
+		if (Step%10)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
@@ -329,6 +329,7 @@ with tf.Session(config=conf) as Sess:
 			Acc = 0
 			for k in range(0, TestData.shape[0], BatchLength):
 				Data = TestData[k:k+BatchLength]
+				Data = np.reshape(Data, [BatchLength, Size[0], Size[1], Size[2]])
 				Labels = TestLabels[k:k+BatchLength]
 				acc = Sess.run(Accuracy, 
 						feed_dict = {InputData: Data, InputLabels: Labels, SupportData: SupportDataList})
