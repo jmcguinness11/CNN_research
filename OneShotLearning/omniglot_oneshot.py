@@ -23,8 +23,8 @@ flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries dir
 
 #Parameters
 BatchLength=25	#32 images are in a minibatch
-Size=[105, 105, 1] #Input img will be resized to this size
-#Size=[28,28,1]
+#Size=[105, 105, 1] #Input img will be resized to this size
+Size=[28,28,1]
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
@@ -66,7 +66,7 @@ def make_dir_list(data_dir):
 
 # the following code will randomly select five of these directories to use for testing and training
 
-def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
+def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28, 28]):
 
     class_nums = random.sample(range(0, len(datalist)), num_classes)
     datalist = np.asarray(datalist)
@@ -85,7 +85,8 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[10
     train_data = np.zeros([train_size*num_classes, Size[0], Size[1]])
 
     for k in range(train_size*num_classes):
-        train_data[k,:,:] = misc.imread(train_set[k])
+    	img = misc.imread(train_set[k])
+        train_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
         '''
         tf_str = tf.constant(train_set[k])
         img = tf.image.decode_png(tf_str)
@@ -96,7 +97,7 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[10
 
     return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[105,105]):
+def get_test_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28,28]):
 
 
     class_nums = random.sample(range(0, len(datalist)), num_classes)
@@ -116,7 +117,8 @@ def get_test_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[105
     test_data = np.zeros([test_size*num_classes, Size[0], Size[1]])
 
     for k in range(test_size*num_classes):
-        test_data[k,:,:] = misc.imread(test_set[k])
+    	img = misc.imread(test_set[k])
+        test_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
 
     test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
 
@@ -163,7 +165,6 @@ def MakeConvNet(Input,Size, First=False):
 	
 
 
-	
 
 with tf.name_scope('network'):
 	EncodedQuery = MakeConvNet(InputData, Size, First=True)
@@ -266,8 +267,6 @@ with tf.Session(config=conf) as Sess:
 
 		TrainData, TrainLabels = get_train_data(datalist)
 
-		print(TrainData.shape)
-
 		# need to randomly select the query
 		# need to randomly select the support elements
 		SupportDataList = []
@@ -307,16 +306,12 @@ with tf.Session(config=conf) as Sess:
 
 
 
-		print(1)
 		Summary,_,Acc,L, prob = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Probabilities],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-		print(2)
 		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-		
-		#print(prob[0])
-		#print('Label', Label[0])
+
 
 
 		#print loss and accuracy at every 10th iteration
