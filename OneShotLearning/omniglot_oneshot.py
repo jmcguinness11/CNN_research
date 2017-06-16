@@ -24,6 +24,7 @@ flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries dir
 #Parameters
 BatchLength=25	#32 images are in a minibatch
 Size=[105, 105, 1] #Input img will be resized to this size
+#Size=[28,28,1]
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
@@ -37,35 +38,94 @@ SupportData = tf.placeholder(tf.float32, [None, NumSupportsPerClass, NumClasses,
 InputLabels = tf.placeholder(tf.int32, [None]) #desired network output
 OneHotLabels = tf.one_hot(InputLabels,NumClasses)
 
-# Load in data
-data_location = '../Omniglot_data/'
-InitTrainData = np.load('{}omniglot_train.npy'.format(data_location))
-InitTestData = np.load('{}omniglot_train.npy'.format(data_location))
 
-# Functions for organizing data
+# Functions for reading in and organizing data
 
-def get_train_data(train_data, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
+# function that makes a list of all of the alphabet / character folders
+def make_dir_list(data_dir):
+    path_back = "{}/Omniglot_data/images_background/".format(data_dir)
+    path_eval = "{}/Omniglot_data/images_evaluation/".format(data_dir)
+    alphadirs_back = [directory for directory in os.listdir(path_back) if not directory.startswith('.')]
+    alphadirs_eval = [directory for directory in os.listdir(path_eval) if not directory.startswith('.')]
 
-    class_nums = random.sample(range(0, train_data.shape[0]), num_classes)
-    train_data = train_data[class_nums]
-    train_data = np.reshape(train_data, [train_size*num_classes, Size[0], Size[1]])
+    datalist = []
+
+    for alphabet in alphadirs_back:
+        charpath = "{}{}/".format(path_back, alphabet)
+        chardirs = [char for char in os.listdir(charpath) if not char.startswith('.')]
+        for character in chardirs:
+            datalist.append("{}{}/".format(charpath, character))
+
+    for alphabet in alphadirs_eval:
+        charpath = "{}{}/".format(path_eval, alphabet)
+        chardirs = [char for char in os.listdir(charpath) if not char.startswith('.')]
+        for character in chardirs:
+            datalist.append("{}{}/".format(charpath, character))
+
+    return datalist
+
+# the following code will randomly select five of these directories to use for testing and training
+
+def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[105, 105]):
+
+    class_nums = random.sample(range(0, len(datalist)), num_classes)
+    datalist = np.asarray(datalist)
+    dir_names = datalist[class_nums]
+
+    images = []
+
+    for dir_name in dir_names:
+        images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
+
+    images = np.asarray(images)
+
+    train_set = images[:, 0 : train_size]
+    train_set = np.reshape(train_set, num_classes * train_size)
+
+    train_data = np.zeros([train_size*num_classes, Size[0], Size[1]])
+
+    for k in range(train_size*num_classes):
+        train_data[k,:,:] = misc.imread(train_set[k])
+        '''
+        tf_str = tf.constant(train_set[k])
+        img = tf.image.decode_png(tf_str)
+        train_data[k,:,:] = tf.image.resize_images(img, [Size[0], Size[1]])
+        '''
 
     train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
 
     return train_data, train_labels
 
-def get_test_data(test_data, train_size=5, test_size=15, num_classes=5, Size=[105,105]):
-
-    class_nums = random.sample(range(0, test_data.shape[0]), num_classes)
-    test_data = test_data[class_nums]
-    test_data = np.reshape(test_data, [test_size*num_classes, Size[0], Size[1]])
+def get_test_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[105,105]):
 
 
-    test_labels = np.asarray([idx / train_size for idx in range(test_size * num_classes)])
+    class_nums = random.sample(range(0, len(datalist)), num_classes)
+    datalist = np.asarray(datalist)
+    dir_names = datalist[class_nums]
+
+    images = []
+
+    for dir_name in dir_names:
+        images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
+
+    images = np.asarray(images)
+
+    test_set = images[:, train_size : train_size + test_size]
+    test_set = np.reshape(test_set, num_classes * test_size)
+
+    test_data = np.zeros([test_size*num_classes, Size[0], Size[1]])
+
+    for k in range(test_size*num_classes):
+        test_data[k,:,:] = misc.imread(test_set[k])
+
+    test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
 
     return test_data, test_labels
 
 
+#make the list of extensions to be used by the get data functions
+data_location = '..'
+datalist = make_dir_list(data_location)
 
 
 #the convolutional network
@@ -159,11 +219,6 @@ with tf.name_scope('loss'):
 
 
 
-
-
-
-
-
 with tf.name_scope('optimizer'):	
 	Optimizer = tf.train.AdamOptimizer(LearningRate).minimize(Loss)
 
@@ -209,8 +264,9 @@ with tf.Session(config=conf) as Sess:
 	for Step in range(1,NumIteration):
 
 
-		TrainData, TrainLabels = get_train_data(InitTrainData)
+		TrainData, TrainLabels = get_train_data(datalist)
 
+		print(TrainData.shape)
 
 		# need to randomly select the query
 		# need to randomly select the support elements
@@ -222,6 +278,7 @@ with tf.Session(config=conf) as Sess:
 
 
 			QueryClass = np.random.randint(NumClasses)
+			#print(TrainLabels, QueryClass)
 			QueryIndices = np.argwhere(TrainLabels == QueryClass)
 			QueryIndex = QueryIndices[0]
 
@@ -272,7 +329,7 @@ with tf.Session(config=conf) as Sess:
 		#independent test accuracy
 		if not Step % EvalFreq:
 			print("\nTesting Independent set:")
-			TestData, TestLabels = get_test_data(InitTestData)
+			TestData, TestLabels = get_test_data(datalist)
 			ct = 0
 			Acc = 0
 			for k in range(0, TestData.shape[0], BatchLength):
