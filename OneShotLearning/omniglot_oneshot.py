@@ -97,7 +97,7 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28
 
     return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28,28]):
+def get_test_data(datalist, train_size=5, test_size=15, num_classes=15, Size=[28,28]):
 
 
     class_nums = random.sample(range(0, len(datalist)), num_classes)
@@ -224,8 +224,10 @@ with tf.name_scope('optimizer'):
 	Optimizer = tf.train.AdamOptimizer(LearningRate).minimize(Loss)
 
 
-with tf.name_scope('accuracy'):	  
-	CorrectPredictions = tf.equal(tf.argmax(Probabilities, 1), tf.argmax(OneHotLabels, 1))
+with tf.name_scope('accuracy'):	 
+	Pred = tf.argmax(Probabilities, 1)
+	Correct = tf.argmax(OneHotLabels, 1)
+	CorrectPredictions = tf.equal(Pred, Correct)
 	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions, tf.float32))
   
 
@@ -306,12 +308,13 @@ with tf.Session(config=conf) as Sess:
 
 
 
-		Summary,_,Acc,L, prob = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Probabilities],
+		Summary,_,Acc,L, p, c = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
 		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-
+		#print(p[0:5])
+		#print(c[0:5])
 
 
 		#print loss and accuracy at every 10th iteration
