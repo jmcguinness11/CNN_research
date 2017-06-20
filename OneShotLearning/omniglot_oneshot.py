@@ -65,12 +65,13 @@ def make_dir_list(data_dir):
     return datalist
 
 # the following code will randomly select five of these directories to use for testing and training
+def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28, 28]):
 
-def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28, 28]):
-
+    #class_nums = np.random.permutation(class_nums)
     class_nums = random.sample(range(0, len(datalist)), num_classes)
     datalist = np.asarray(datalist)
     dir_names = datalist[class_nums]
+    #dir_names = datalist
 
     images = []
 
@@ -87,17 +88,18 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=5, Size=[28
     for k in range(train_size*num_classes):
     	img = misc.imread(train_set[k])
         train_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
-        '''
-        tf_str = tf.constant(train_set[k])
-        img = tf.image.decode_png(tf_str)
-        train_data[k,:,:] = tf.image.resize_images(img, [Size[0], Size[1]])
-        '''
+
 
     train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
 
+    #randomize
+    permutation = np.random.permutation(train_labels.shape[0])
+    train_labels = train_labels[permutation]
+    train_data = train_data[permutation]
+
     return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=15, Size=[28,28]):
+def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28,28]):
 
 
     class_nums = random.sample(range(0, len(datalist)), num_classes)
@@ -122,6 +124,11 @@ def get_test_data(datalist, train_size=5, test_size=15, num_classes=15, Size=[28
 
     test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
 
+    #randomize
+    permutation = np.random.permutation(test_labels.shape[0])
+    test_labels = test_labels[permutation]
+    test_data = test_data[permutation]
+
     return test_data, test_labels
 
 
@@ -130,8 +137,42 @@ data_location = '..'
 datalist = make_dir_list(data_location)
 
 
+
+def make_support_set(Data, Labels):
+	SupportDataList = []
+	QueryDataList = []
+	QueryLabelList = []
+	
+	for i in range(BatchLength):
+
+
+		QueryClass = np.random.randint(NumClasses)
+		QueryIndices = np.argwhere(TrainLabels == QueryClass)
+		QueryIndex = QueryIndices[0]
+
+		QueryDataList.append(TrainData[QueryIndex])
+		QueryLabelList.append(TrainLabels[QueryIndex])
+
+		SupportDataList.append([])
+
+		for j in range(NumClasses):
+
+			if (j == QueryClass):
+				SupportDataList[i].append(np.squeeze(Data[QueryIndices[1 : 1+NumSupportsPerClass]], axis=1))
+			else:
+				SupportIndices = np.argwhere(TrainLabels == j)
+				SupportDataList[i].append(np.squeeze(Data[SupportIndices[0 : NumSupportsPerClass]], axis=1))
+
+	
+	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
+	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
+	Label = np.reshape(QueryLabelList, [BatchLength])
+	return QueryData, SupportDataList, Label
+
+
+
 #the convolutional network
-NumKernels = [32,32,32,32]
+NumKernels = [64,32,64,128,32]
 def MakeConvNet(Input,Size, First=False):
 	CurrentInput = Input
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
@@ -181,7 +222,6 @@ with tf.name_scope('network'):
 	
 	QueryRepeated = tf.stack(QueryList)
 	Supports = tf.stack(SupportList)
-	print(Supports.shape)
 
 
 
@@ -262,13 +302,17 @@ with tf.Session(config=conf) as Sess:
 	
 	SummaryWriter = tf.summary.FileWriter(FLAGS.summary_dir,tf.get_default_graph())
 	Saver = tf.train.Saver()
-	
+
+
+
 	# Keep training until reach max iterations - other stopping criterion could be added
 	for Step in range(1,NumIteration):
 
 
+		
 		TrainData, TrainLabels = get_train_data(datalist)
-
+		
+		'''
 		# need to randomly select the query
 		# need to randomly select the support elements
 		SupportDataList = []
@@ -300,6 +344,9 @@ with tf.Session(config=conf) as Sess:
 		QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
 		SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
 		Label = np.reshape(QueryLabelList, [BatchLength])
+		'''
+		
+		QueryData, SupportDataList, Label = make_support_set(TrainData, TrainLabels)
 
 		
 
@@ -311,14 +358,12 @@ with tf.Session(config=conf) as Sess:
 		Summary,_,Acc,L, p, c = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-		#Summary,_,L = Sess.run([SummaryOp,Optimizer, Loss], feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
-
 		#print(p[0:5])
 		#print(c[0:5])
 
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%10)==0:
+		if (Step%20)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
@@ -328,14 +373,25 @@ with tf.Session(config=conf) as Sess:
 		if not Step % EvalFreq:
 			print("\nTesting Independent set:")
 			TestData, TestLabels = get_test_data(datalist)
+			print(TestData.shape)
 			ct = 0
 			Acc = 0
 			for k in range(0, TestData.shape[0], BatchLength):
+
+				'''
 				Data = TestData[k:k+BatchLength]
 				Data = np.reshape(Data, [BatchLength, Size[0], Size[1], Size[2]])
 				Labels = TestLabels[k:k+BatchLength]
-				acc = Sess.run(Accuracy, 
+				'''
+
+				Data = TestData[k:k+BatchLength]
+				Labels = TestLabels[k:k+BatchLength]
+				Data, SupportDataList, Label = make_support_set(Data, Labels)
+				
+				acc, p, c = Sess.run([Accuracy, Pred, Correct], 
 						feed_dict = {InputData: Data, InputLabels: Labels, SupportData: SupportDataList})
+				#print(p)
+				#print(c)
 				#print("Independent Batch:", acc)
 				#print(type(acc), type(Acc))
 				Acc += acc
