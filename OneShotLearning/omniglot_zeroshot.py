@@ -28,9 +28,9 @@ Size=[28,28,1]
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
-NumClassesInSubset = 10
+NumClassesInSubset = 50
 NumSupportsPerClass = 2
-EvalFreq=100 #evaluate on every 100th iteration
+EvalFreq=10 #evaluate on every 100th iteration
 
 
 # Placeholders
@@ -70,7 +70,7 @@ def make_dir_list(data_dir):
 	return train_data_list, test_data_list
 
 # the following code will randomly select five of these directories to use for testing and training
-def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28, 28]):
+def get_train_data(datalist, num_classes=NumClasses, Size=[28, 28]):
 
 	class_nums = random.sample(range(0, len(datalist)), num_classes)
 	dir_names = datalist[class_nums]
@@ -80,9 +80,9 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses,
 	for dir_name in dir_names:
 		images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
 
-	images = np.asarray(images)
-
-	train_set = images[:, 0 : train_size]
+	
+	train_set = np.asarray(images)
+	train_size = train_set.shape[1]
 	train_set = np.reshape(train_set, num_classes * train_size)
 
 	train_data = np.zeros([train_size*num_classes, Size[0], Size[1]])
@@ -101,7 +101,7 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses,
 
 	return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28,28], class_nums=None):
+def get_test_data(datalist, num_classes=NumClasses, Size=[28,28], class_nums=None):
 
 	if class_nums == None:
 		class_nums = random.sample(range(0, len(datalist)), num_classes)
@@ -113,9 +113,8 @@ def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, 
 	for dir_name in dir_names:
 		images.append(['{}{}'.format(dir_name, img) for img in os.listdir(dir_name) if not img.startswith('.')])
 
-	images = np.asarray(images)
-
-	test_set = images[:, train_size : train_size + test_size]
+	test_set = np.asarray(images)
+	test_size = test_set.shape[1]
 	test_set = np.reshape(test_set, num_classes * test_size)
 
 	test_data = np.zeros([test_size*num_classes, Size[0], Size[1]])
@@ -131,6 +130,7 @@ def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, 
 	test_labels = test_labels[permutation]
 	test_data = test_data[permutation]
 
+
 	return test_data, test_labels
 
 
@@ -138,9 +138,9 @@ def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, 
 #make the list of extensions to be used by the get data functions
 #then shorten the list to a limited number of randomly chosen classes
 data_location = '..'
-datalist, _ = make_dir_list(data_location)
-np.random.shuffle(datalist)
-datalist = datalist[0:NumClassesInSubset]
+train_data_list, test_data_list = make_dir_list(data_location)
+np.random.shuffle(train_data_list)
+train_data_list = train_data_list[0:NumClassesInSubset]
 
 
 
@@ -148,22 +148,22 @@ def make_support_set(Data, Labels):
 	SupportDataList = []
 	QueryDataList = []
 	QueryLabelList = []
-	
 	for i in range(BatchLength):
 
 
 		QueryClass = np.random.randint(NumClasses)
 		QueryIndices = np.argwhere(Labels == QueryClass)
+		#print(QueryIndices.shape, QueryClass, Labels.shape)
 		QueryIndex = QueryIndices[0]
 
 		QueryDataList.append(Data[QueryIndex])
 		QueryLabelList.append(Labels[QueryIndex])
 
 		SupportDataList.append([])
-		#print(QueryIndices.shape, QueryClass, Labels.shape)
 
 		for j in range(NumClasses):
-
+			#print(np.squeeze(Data[QueryIndices[1 : 1+NumSupportsPerClass]], axis=1).shape)
+			#print(QueryIndices.shape)
 			if (j == QueryClass):
 				SupportDataList[i].append(np.squeeze(Data[QueryIndices[1 : 1+NumSupportsPerClass]], axis=1))
 			else:
@@ -311,47 +311,47 @@ with tf.Session(config=conf) as Sess:
 	Saver = tf.train.Saver()
 
 
-
 	# Keep training until reach max iterations - other stopping criterion could be added
 	for Step in range(1,NumIteration):
 
 
 		
-		TrainData, TrainLabels = get_train_data(datalist)
+		TrainData, TrainLabels = get_train_data(train_data_list)
 		
-		QueryData, SupportDataList, Label = make_support_set(TrainData, TrainLabels)
+		QueryData, SuppData, Label = make_support_set(TrainData, TrainLabels)
 
 
 		Summary,_,Acc,L, p, c = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct],
-							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
+							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SuppData})
 
 		#print(p[0:5])
 		#print(c[0:5])
 
-
 		#print loss and accuracy at every 10th iteration
-		if (Step%20)==0:
+		if (Step%2)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
 			print("Loss:" + str(L))
 
-
-		#average independent test accuracy
+		#independent test accuracy
 		if not Step % EvalFreq:
 			print("\nTesting Independent set:")
-			Acc = 0
-			for k in range(25):
-				TestData, TestLabels = get_test_data(datalist)
+			TestData, TestLabels = get_test_data(test_data_list)
+			print(TestData.shape)
 
-				TestData, SuppData, TestLabels = make_support_set(TestData, TestLabels)
 
-				acc, p, c = Sess.run([Accuracy, Pred, Correct], 
-						feed_dict = {InputData: TestData, InputLabels: TestLabels, SupportData: SuppData})
-				Acc += acc
+			Data = TestData
+			Label = TestLabels
+			#Data = TestData[k:k+BatchLength]
+			#Label = TestLabels[k:k+BatchLength]
+			Data, SuppData, Label = make_support_set(Data, Label)
 
-			Acc /= k
-			print("Independent Test set:", Acc, '\n')
+			acc, p, c = Sess.run([Accuracy, Pred, Correct], 
+					feed_dict = {InputData: Data, InputLabels: Label, SupportData: SuppData})
+
+
+			print("Independent Test set:", acc, '\n')
 
 		
 	print('Saving model...')
