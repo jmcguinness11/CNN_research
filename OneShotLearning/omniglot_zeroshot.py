@@ -30,7 +30,7 @@ LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
 NumClassesInSubset = 50
 NumSupportsPerClass = 2
-EvalFreq=10 #evaluate on every 100th iteration
+EvalFreq=100 #evaluate on every 100th iteration
 
 
 # Placeholders
@@ -173,8 +173,8 @@ def make_support_set(Data, Labels):
 	
 	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
 	#this reshape is not good, swap the dimesnions instead of this!!!
-        SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
-        SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
+	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
+	SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
 	Label = np.reshape(QueryLabelList, [BatchLength])
 	return QueryData, SupportDataList, Label
 
@@ -331,7 +331,7 @@ with tf.Session(config=conf) as Sess:
 		#print(c[0:5])
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%2)==0:
+		if (Step%20)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
@@ -340,21 +340,18 @@ with tf.Session(config=conf) as Sess:
 		#independent test accuracy
 		if not Step % EvalFreq:
 			print("\nTesting Independent set:")
-			TestData, TestLabels = get_test_data(test_data_list)
-			print(TestData.shape)
+			Acc = 0
+			for k in range(25):
+				TestData, TestLabels = get_test_data(test_data_list)
 
+				TestData, SuppData, TestLabels = make_support_set(TestData, TestLabels)
 
-			Data = TestData
-			Label = TestLabels
-			#Data = TestData[k:k+BatchLength]
-			#Label = TestLabels[k:k+BatchLength]
-			Data, SuppData, Label = make_support_set(Data, Label)
+				acc, p, c = Sess.run([Accuracy, Pred, Correct], 
+						feed_dict = {InputData: TestData, InputLabels: TestLabels, SupportData: SuppData})
+				Acc += acc
 
-			acc, p, c = Sess.run([Accuracy, Pred, Correct], 
-					feed_dict = {InputData: Data, InputLabels: Label, SupportData: SuppData})
-
-
-			print("Independent Test set:", acc, '\n')
+			Acc /= k
+			print("Independent Test set:", Acc, '\n')
 
 		
 	print('Saving model...')
