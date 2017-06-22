@@ -24,7 +24,7 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-EvalFreq=500 #evaluate on every 100th iteration
+EvalFreq=100 #evaluate on every 100th iteration
 
 #load data
 directory = '../MNIST_data/'
@@ -32,6 +32,8 @@ TrainData= np.load('{}full_train_images.npy'.format(directory))
 TrainLabels=np.load('{}full_train_labels.npy'.format(directory))
 TestData= np.load('{}full_test_images.npy'.format(directory))
 TestLabels=np.load('{}full_test_labels.npy'.format(directory))
+
+
 
 
 # Create tensorflow graph
@@ -70,6 +72,40 @@ def MakeConvNet(Input,Size):
 
 	return CurrentInput
 
+#create spaced out labels to improve distance calculations
+def create_labels(Num):
+
+	''' THIS IS SO DUMB WHY DID I THINK IT WOULD WORK!!!
+	vals = [1,0,-1]
+	result = np.zeros((Num, Num))
+	for i in range(Num):
+		start = i % 3
+		for j in range(Num):
+			result[i][j] = vals[(start + j) % 3]
+	return result
+	'''
+	vals = [1,1,1,1,0,0,0,-1,-1,-1]
+	result = np.zeros((Num,Num))
+	
+	if Num == 10:
+		for i in range(10):
+			start = i % 10
+			for j in range(10):
+				result[i][j] = vals[(start + j) % 10]
+		return result
+
+	for i in range(10):
+		for j in range(10):
+			if i == j:
+				result[i][j] = 1
+			else:
+				result[i][j] = -1
+	return result
+
+LabelMatrix = create_labels(NumClasses)
+
+
+
 	
 # Construct model
 OutMaps = MakeConvNet(InputData, Size)
@@ -82,16 +118,47 @@ print(OutShape)
 
 # Define loss and optimizer
 with tf.name_scope('loss'):
-		#LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.argmax(OneHotLabels,1),1),1),1)  #32		
-		LabelIndices=tf.expand_dims(tf.expand_dims(OneHotLabels,1),1)  #32
-	
-		#GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
-		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
 
-		GTMap = tf.cast(GTMap,tf.float32)
-		DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
-		Loss=tf.reduce_sum(DiffMap)
-		#Loss=tf.reduce_mean(DiffMap)
+	'''
+	#LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(tf.argmax(OneHotLabels,1),1),1),1)  #32		
+	LabelIndices=tf.expand_dims(tf.expand_dims(OneHotLabels,1),1)  #32
+
+	#GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
+	GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
+	print(LabelIndices.shape, OneHotLabels.shape, GTMap.shape)
+
+	GTMap = tf.cast(GTMap,tf.float32)
+	DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
+	Loss=tf.reduce_sum(DiffMap)
+	#Loss=tf.reduce_mean(DiffMap)
+	'''
+
+
+	OutMaps = tf.expand_dims(OutMaps,1)
+	MapTileShape = tf.stack([1, NumClasses, 1, 1, 1])
+	OutMaps = tf.tile(OutMaps,MapTileShape)
+
+	LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(LabelMatrix,1),1),0)
+	LabelTileShape = tf.stack([OutShape[0],1,OutShape[1],OutShape[2],1])
+	GTMap= tf.cast(tf.tile(LabelIndices, LabelTileShape),tf.float32)
+	print(OutMaps.shape, GTMap.shape)
+
+
+	#cosine similarity = (A*B)/(|A||B|)
+	#A * B
+	DotProduct = tf.reduce_sum(tf.multiply(OutMaps, GTMap),[2,3,4]) #necessary b/c actually -1s
+	#|A|
+	MagLabels = tf.sqrt(tf.reduce_sum(tf.square(GTMap), [2,3,4]))
+	#|B|
+	MagMap = tf.sqrt(tf.reduce_sum(tf.square(OutMaps), [2,3,4]))
+	#result
+	CosSim = DotProduct / tf.clip_by_value((MagMap*MagLabels), 1e-10, float("inf"))
+
+
+	Probabilities = tf.nn.softmax(CosSim)
+	Loss = tf.reduce_sum(tf.losses.softmax_cross_entropy(OneHotLabels,Probabilities))
+
+
 		
 
 with tf.name_scope('optimizer'):	
@@ -101,25 +168,30 @@ with tf.name_scope('optimizer'):
 
 with tf.name_scope('accuracy'):	  
 
+	'''
+	Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
+	Ones = tf.ones(OutShape, tf.float32)
+
+	DiffZeros = tf.reduce_mean(tf.subtract(Zeros, OutMaps), [1,2])
+	DiffOnes = tf.reduce_mean(tf.subtract(Ones, OutMaps), [1,2])
+
+	DiffList = []
+	for k in range(NumClasses):
+		x = DiffZeros[:,k]
+		y = tf.reduce_sum(DiffZeros, 1)
+		DiffList.append(tf.square(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k]))
 
 
-		Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
-		Ones = tf.ones(OutShape, tf.float32)
+	Diffs = tf.stack(DiffList)
+	Pred = tf.argmin(Diffs,0)
+	CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
+	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
+	'''
 
-		DiffZeros = tf.reduce_mean(tf.subtract(Zeros, OutMaps), [1,2])
-		DiffOnes = tf.reduce_mean(tf.subtract(Ones, OutMaps), [1,2])
+	Pred = tf.argmax(CosSim,1)
+	CorrectPredictions = tf.equal(tf.cast(Pred,tf.int32), InputLabels)
+	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
 
-		DiffList = []
-		for k in range(NumClasses):
-			x = DiffZeros[:,k]
-			y = tf.reduce_sum(DiffZeros, 1)
-			DiffList.append(tf.square(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k]))
-
-
-		Diffs = tf.stack(DiffList)
-		Pred = tf.argmin(Diffs,0)
-		CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
-		Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
 
 
 
@@ -167,8 +239,9 @@ with tf.Session(config=conf) as Sess:
 		
 
 		#execute the session
-		Summary,_,L,A,P, labels, CP, om = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred, InputLabels, CorrectPredictions, OutMaps], feed_dict={InputData: Data, InputLabels: Label})
+		Summary,_,L,A,P, labels, CP, probs = Sess.run([SummaryOp,Optimizer, Loss,Accuracy,Pred, InputLabels, CorrectPredictions, Probabilities], feed_dict={InputData: Data, InputLabels: Label})
 
+		print(probs[0,0:5], P[0], labels[0])
 		'''
 		print('')
 		print('Correct:\t', CP[0:5])
@@ -181,21 +254,21 @@ with tf.Session(config=conf) as Sess:
 		#print("Accuracy:" + str(A))
 		#print("Pred:" + str(P))
 		'''
-		if not Step % 50:
+		if not Step % 20:
 			print("Iteration: " + str(Step))
 			print("Loss: " + str(L))
 			print("Accuracy: " + str(A))
 		
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
-			TotalAcc=0;
+			TotalAcc=0
 			Data=np.zeros([BatchLength]+Size)
 			for i in range(0,TestData.shape[0],BatchLength):
 				if TestData.shape[0] - i < 25:
 					break
 				Data=TestData[i:(i+BatchLength)]
 				Label=TestLabels[i:(i+BatchLength)]
-				P = Sess.run(Pred, feed_dict={InputData: Data})
+				P = Sess.run(Pred, feed_dict={InputData: Data, InputLabels:Label})
 				for i in range(len(P)):
 					if P[i]==Label[i]:
 						TotalAcc+=1
