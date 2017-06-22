@@ -14,7 +14,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/oneshot/{}'.format(dt), 'Summaries directory')
 #if summary directory exist, delete the previous summaries
 #if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -22,14 +22,16 @@ flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries dir
 
 
 #Parameters
-BatchLength=25	#32 images are in a minibatch
+BatchLength=32	#32 images are in a minibatch
 #Size=[105, 105, 1] #Input img will be resized to this size
 Size=[28,28,1]
 NumIteration=200000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
-NumClassesInSubset = 10
+NumClassesInSubset = 5
 NumSupportsPerClass = 2
+TrainSize = 10
+TestSize = 10
 EvalFreq=100 #evaluate on every 100th iteration
 
 
@@ -70,7 +72,7 @@ def make_dir_list(data_dir):
 	return train_data_list, test_data_list
 
 # the following code will randomly select five of these directories to use for testing and training
-def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28, 28]):
+def get_train_data(datalist, train_size=TestSize, test_size=TestSize, num_classes=NumClasses, Size=[28, 28]):
 
 	class_nums = random.sample(range(0, len(datalist)), num_classes)
 	dir_names = datalist[class_nums]
@@ -101,7 +103,7 @@ def get_train_data(datalist, train_size=5, test_size=15, num_classes=NumClasses,
 
 	return train_data, train_labels
 
-def get_test_data(datalist, train_size=5, test_size=15, num_classes=NumClasses, Size=[28,28], class_nums=None):
+def get_test_data(datalist, train_size=TrainSize, test_size=TestSize, num_classes=NumClasses, Size=[28,28], class_nums=None):
 
 	if class_nums == None:
 		class_nums = random.sample(range(0, len(datalist)), num_classes)
@@ -172,16 +174,19 @@ def make_support_set(Data, Labels):
 
 	
 	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
-	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
+	#this reshape is not good, swap the dimesnions instead of this!!!
+        SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
+        SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
 	Label = np.reshape(QueryLabelList, [BatchLength])
 	return QueryData, SupportDataList, Label
 
 
 
 #the convolutional network
-NumKernels = [64,32,64,128,32]
+NumKernels = [32,32,32]
 def MakeConvNet(Input,Size, First=False):
 	CurrentInput = Input
+        CurrentInput=(CurrentInput/255.0)-0.5
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
 	for i in range(len(NumKernels)): #number of layers
 		with tf.variable_scope('conv'+str(i)) as varscope:
@@ -236,24 +241,22 @@ with tf.name_scope('network'):
 
 # Define loss and optimizer
 with tf.name_scope('loss'):
-
+        
 	#first calculate cosine similarity 
 	#between EncodedQuery and everything in Supports
 	#(A*B)/(|A||B|)
-
-	# A * B
+        # A * B
 	DotProduct = tf.reduce_sum(tf.multiply(QueryRepeated, Supports), [2,3,4])
 	# |A|
-	MagQuery = tf.sqrt(tf.reduce_sum(tf.square(QueryRepeated), [2,3,4]))
+	#MagQuery = tf.sqrt(tf.reduce_sum(tf.square(QueryRepeated), [2,3,4]))
 	# |B|
 	MagSupport = tf.sqrt(tf.reduce_sum(tf.square(Supports), [2,3,4]))
 	# result
-	CosSim = DotProduct / (MagQuery * MagSupport)
+	CosSim = DotProduct / tf.clip_by_value(  MagSupport ,1e-10,float("inf"))
 
-
-	#reshape to condense supports from the same class to one thing
-	CosSim = tf.reshape(CosSim, [NumClasses, NumSupportsPerClass, -1])
-	CosSim = tf.transpose(tf.reduce_sum(CosSim, 1))
+        #reshape to condense supports from the same class to one thing
+	CosSim = tf.reshape(CosSim, [ NumClasses, NumSupportsPerClass, -1])
+	CosSim = tf.transpose(tf.reduce_mean(CosSim, 1))
 
 	#apply softmax to cosine similarities
 	Probabilities = tf.nn.softmax(CosSim)
@@ -261,7 +264,7 @@ with tf.name_scope('loss'):
 	
 	#TODO  THIS MIGHT NOT WORK
 	#TODO
-	Loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(OneHotLabels,CosSim))
+	Loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(OneHotLabels,Probabilities))
 	#TODO
 	#TODO
 
@@ -301,7 +304,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.25 #fraction of GPU used
 
 with tf.Session(config=conf) as Sess:
 	Sess.run(Init)
@@ -318,13 +321,13 @@ with tf.Session(config=conf) as Sess:
 
 		
 		TrainData, TrainLabels = get_train_data(datalist)
-		
 		QueryData, SupportDataList, Label = make_support_set(TrainData, TrainLabels)
 
 
-		Summary,_,Acc,L, p, c = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct],
+		Summary,_,Acc,L, p, c,s = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct,CosSim],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
-
+                #print(s)
+                #print(c)
 		#print(p[0:5])
 		#print(c[0:5])
 

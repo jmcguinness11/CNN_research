@@ -172,7 +172,9 @@ def make_support_set(Data, Labels):
 
 	
 	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
-	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumSupportsPerClass, NumClasses, Size[0], Size[1], Size[2]])
+	#this reshape is not good, swap the dimesnions instead of this!!!
+        SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
+        SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
 	Label = np.reshape(QueryLabelList, [BatchLength])
 	return QueryData, SupportDataList, Label
 
@@ -248,7 +250,8 @@ with tf.name_scope('loss'):
 	# |B|
 	MagSupport = tf.sqrt(tf.reduce_sum(tf.square(Supports), [2,3,4]))
 	# result
-	CosSim = DotProduct / (MagQuery * MagSupport)
+	#CosSim = DotProduct / (MagQuery * MagSupport)
+	CosSim = DotProduct / tf.clip_by_value(MagQuery * MagSupport ,1e-10,float("inf"))
 
 
 	#reshape to condense supports from the same class to one thing
