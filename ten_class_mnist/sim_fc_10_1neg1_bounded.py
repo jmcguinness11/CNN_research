@@ -106,14 +106,14 @@ with tf.name_scope('accuracy'):
 		Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
 		Ones = tf.ones(OutShape, tf.float32)
 
-		DiffZeros = tf.reduce_mean(tf.subtract(Zeros, OutMaps), [1,2])
-		DiffOnes = tf.reduce_mean(tf.subtract(Ones, OutMaps), [1,2])
+		DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps), [1,2]))
+		DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps), [1,2]))
 
 		DiffList = []
 		for k in range(NumClasses):
 			x = DiffZeros[:,k]
 			y = tf.reduce_sum(DiffZeros, 1)
-			DiffList.append(tf.square(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k]))
+			DiffList.append(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k])
 
 
 		Diffs = tf.stack(DiffList)

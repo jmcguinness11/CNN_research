@@ -94,8 +94,8 @@ def create_labels(Num):
 				result[i][j] = vals[(start + j) % 10]
 		return result
 
-	for i in range(10):
-		for j in range(10):
+	for i in range(len(Num)):
+		for j in range(len(Num)):
 			if i == j:
 				result[i][j] = 1
 			else:
@@ -141,7 +141,6 @@ with tf.name_scope('loss'):
 	LabelIndices=tf.expand_dims(tf.expand_dims(tf.expand_dims(LabelMatrix,1),1),0)
 	LabelTileShape = tf.stack([OutShape[0],1,OutShape[1],OutShape[2],1])
 	GTMap= tf.cast(tf.tile(LabelIndices, LabelTileShape),tf.float32)
-	print(OutMaps.shape, GTMap.shape)
 
 
 	#cosine similarity = (A*B)/(|A||B|)
@@ -241,7 +240,6 @@ with tf.Session(config=conf) as Sess:
 		#execute the session
 		Summary,_,L,A,P, labels, CP, probs = Sess.run([SummaryOp,Optimizer, Loss,Accuracy,Pred, InputLabels, CorrectPredictions, Probabilities], feed_dict={InputData: Data, InputLabels: Label})
 
-		print(probs[0,0:5], P[0], labels[0])
 		'''
 		print('')
 		print('Correct:\t', CP[0:5])
