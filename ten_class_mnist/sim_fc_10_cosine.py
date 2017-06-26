@@ -24,7 +24,7 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-EvalFreq=100 #evaluate on every 100th iteration
+EvalFreq=500 #evaluate on every 100th iteration
 
 #load data
 directory = '../MNIST_data/'
@@ -73,7 +73,7 @@ def MakeConvNet(Input,Size):
 	return CurrentInput
 
 #create spaced out labels to improve distance calculations
-def create_labels(Num):
+def create_labels(Num, one_hot = True):
 
 	''' THIS IS SO DUMB WHY DID I THINK IT WOULD WORK!!!
 	vals = [1,0,-1]
@@ -87,15 +87,15 @@ def create_labels(Num):
 	vals = [1,1,1,1,0,0,0,-1,-1,-1]
 	result = np.zeros((Num,Num))
 	
-	if Num == 10:
+	if Num == 10 and not one_hot:
 		for i in range(10):
 			start = i % 10
 			for j in range(10):
 				result[i][j] = vals[(start + j) % 10]
 		return result
 
-	for i in range(len(Num)):
-		for j in range(len(Num)):
+	for i in range(Num):
+		for j in range(Num):
 			if i == j:
 				result[i][j] = 1
 			else:
@@ -112,7 +112,6 @@ OutMaps = MakeConvNet(InputData, Size)
 
 OutShape= OutMaps.get_shape()
 print(OutShape)
-#import afdsj
 
 
 
@@ -218,7 +217,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.87 #fraction of GPU used
 
 # Launch the session with default graph
 with tf.Session(config=conf) as Sess:
@@ -252,7 +251,7 @@ with tf.Session(config=conf) as Sess:
 		#print("Accuracy:" + str(A))
 		#print("Pred:" + str(P))
 		'''
-		if not Step % 20:
+		if not Step % 100:
 			print("Iteration: " + str(Step))
 			print("Loss: " + str(L))
 			print("Accuracy: " + str(A))
