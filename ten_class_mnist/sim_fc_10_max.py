@@ -96,23 +96,7 @@ with tf.name_scope('optimizer'):
 			#Optimizer = tf.train.GradientDescentOptimizer(LearningRate).minimize(Loss)
 
 with tf.name_scope('accuracy'):	  
-	'''
 
-	Zeros = tf.ones(avg_max_min.shape, tf.float32) * -1 #actually -1s
-	Ones = tf.ones(avg_max_min.shape, tf.float32)
-
-	SquaredDiffZeros = tf.square(tf.subtract(Zeros, OutMaps), [1,2])
-	SquaredDiffOnes = tf.square(tf.subtract(Ones, OutMaps), [1,2])
-
-	DiffList = []
-	for k in range(NumClasses):
-		x = DiffZeros[:,k]
-		y = tf.reduce_sum(DiffZeros, 1)
-		DiffList.append(tf.reduce_sum(SquaredDiffZeros, 1) - SquaredDiffZeros[:,k] + DiffOnes[:,k])
-
-
-	Diffs = tf.stack(DiffList)
-	'''
 	Pred = tf.argmax(avg_max_min,1)
 	CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
 	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))

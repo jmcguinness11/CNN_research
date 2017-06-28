@@ -24,7 +24,7 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-EvalFreq=500 #evaluate on every 100th iteration
+EvalFreq=100 #evaluate on every 100th iteration
 
 #load data
 directory = '../MNIST_data/'
@@ -132,7 +132,7 @@ with tf.name_scope('loss'):
 	LabelTileShape = tf.stack([OutShape[0],1,OutShape[1],OutShape[2],1])
 	GTMap= tf.cast(tf.tile(LabelIndices, LabelTileShape),tf.float32)
 
-
+	'''
 	#cosine similarity = (A*B)/(|A||B|)
 	#A * B
 	DotProduct = tf.reduce_sum(tf.multiply(OutMaps, GTMap),[2,3,4]) #necessary b/c actually -1s
@@ -142,8 +142,9 @@ with tf.name_scope('loss'):
 	MagMap = tf.sqrt(tf.reduce_sum(tf.square(OutMaps), [2,3,4]))
 	#result
 	CosSim = DotProduct / tf.clip_by_value((MagMap*MagLabels), 1e-10, float("inf"))
-
 	'''
+
+
 	#"learned" cosine similarity = (W*A*B)/(|W||A||B|)
 	#define W
 	W_cos = tf.Variable(tf.random_normal(OutMaps.shape, stddev=0.1), name="W_cos")
@@ -157,7 +158,6 @@ with tf.name_scope('loss'):
 	MagMap = tf.sqrt(tf.reduce_sum(tf.square(OutMaps), [2,3,4]))
 	#result
 	CosSim = DotProduct / tf.clip_by_value((MagW*MagMap*MagLabels), 1e-10, float("inf"))
-	'''
 
 	#actual loss calculation
 	Probabilities = tf.nn.softmax(CosSim)
