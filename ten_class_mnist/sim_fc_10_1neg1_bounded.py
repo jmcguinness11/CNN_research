@@ -25,6 +25,7 @@ NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 EvalFreq=500 #evaluate on every 100th iteration
+SaveFreq=100000
 
 #load data
 directory = '../MNIST_data/'
@@ -106,8 +107,8 @@ with tf.name_scope('accuracy'):
 		Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
 		Ones = tf.ones(OutShape, tf.float32)
 
-		DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps), [1,2]))
-		DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps), [1,2]))
+		DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps)), [1,2])
+		DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps)), [1,2])
 
 		DiffList = []
 		for k in range(NumClasses):
@@ -186,6 +187,11 @@ with tf.Session(config=conf) as Sess:
 			print("Loss: " + str(L))
 			print("Accuracy: " + str(A))
 		
+		
+		if not Step % SaveFreq:
+			print('Saving model...')
+			print(Saver.save(Sess, "./saved/euclidean/model"))
+		
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
 			TotalAcc=0;
@@ -206,8 +212,8 @@ with tf.Session(config=conf) as Sess:
 		SummaryWriter.add_summary(Summary,Step)
 		Step+=1
 
-	#print('Saving model...')
-	#print(Saver.save(Sess, "./saved/model/"))
+	print('Saving model...')
+	print(Saver.save(Sess, "./saved/euclidean/model"))
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)

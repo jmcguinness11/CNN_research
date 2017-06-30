@@ -21,10 +21,11 @@ if tf.gfile.Exists(FLAGS.summary_dir):
 #Parameters
 BatchLength=25 #25 images are in a minibatch
 Size=[28, 28, 1] #Input img will be resized to this size
-NumIteration=1000000
+NumIteration=10000000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 EvalFreq=500 #evaluate on every 100th iteration
+SaveFreq = 100000
 
 #load data
 directory = '../MNIST_data/'
@@ -175,13 +176,16 @@ with tf.Session(config=conf) as Sess:
 						TotalAcc+=1
 
 			print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
-		#print("Loss:" + str(L))
 		
+		if not Step % SaveFreq:
+			print('Saving model...')
+			print(Saver.save(Sess, "./saved/max/model"))
+
 		SummaryWriter.add_summary(Summary,Step)
 		Step+=1
 
-	#print('Saving model...')
-	#print(Saver.save(Sess, "./saved/model/"))
+	print('Saving model...')
+	print(Saver.save(Sess, "./saved/max/model"))
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
