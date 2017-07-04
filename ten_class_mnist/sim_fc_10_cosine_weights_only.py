@@ -25,6 +25,7 @@ NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 EvalFreq=100 #evaluate on every 100th iteration
+SaveFreq = 10000
 
 #load data
 directory = '../MNIST_data/'
@@ -163,18 +164,7 @@ with tf.Session(config=conf) as Sess:
 		#execute the session
 		Summary,_,L,A,P, labels, CP, probs = Sess.run([SummaryOp,Optimizer, Loss,Accuracy,Pred, InputLabels, CorrectPredictions, Probabilities], feed_dict={InputData: Data, InputLabels: Label})
 
-		'''
-		print('')
-		print('Correct:\t', CP[0:5])
-		print('Preds:\t', P[0:5])
-		print('Labels:\t', labels[0:5])
-		print('')
-		#train accuracy
-		#print("Iteration: "+str(Step))
-		#print("Loss:" + str(L))
-		#print("Accuracy:" + str(A))
-		#print("Pred:" + str(P))
-		'''
+
 		if not Step % 20:
 			print("Iteration: " + str(Step))
 			print("Loss: " + str(L))
@@ -194,14 +184,18 @@ with tf.Session(config=conf) as Sess:
 					if P[i]==Label[i]:
 						TotalAcc+=1
 
+
 			print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
-		#print("Loss:" + str(L))
 		
+		if not Step % SaveFreq:
+			print('Saving model...')
+			print(Saver.save(Sess, "./saved/cos_weights"))
+
 		SummaryWriter.add_summary(Summary,Step)
 		Step+=1
 
-	#print('Saving model...')
-	#print(Saver.save(Sess, "./saved/model/"))
+	print('Saving model...')
+	print(Saver.save(Sess, "./saved/cos_weights"))
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
