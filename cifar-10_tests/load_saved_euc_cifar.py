@@ -40,7 +40,7 @@ TestLabels = np.load('{}Cifar_test_labels.npy'.format(directory))
 # Create tensorflow graph
 InputData = tf.placeholder(tf.float32, [BatchLength, Size[0], Size[1], Size[2] ]) #network input
 InputLabels = tf.placeholder(tf.int32, [BatchLength]) #desired network output
-#OneHotLabels = tf.one_hot(InputLabels,NumClasses)
+OneHotLabels = tf.one_hot(InputLabels,NumClasses)
 KeepProb = tf.placeholder(tf.float32) #dropout (keep probability -currently not used)
 
 NumKernels = [64,32,64,32,10]
@@ -79,8 +79,22 @@ OutMaps = MakeConvNet(InputData, Size)
 OutShape= OutMaps.get_shape()
 
 with tf.name_scope('accuracy'):	  
-	avg_max_min = (tf.reduce_max(OutMaps,[1,2]) + tf.reduce_min(OutMaps, [1,2])) / 2
-	Pred = tf.argmax(avg_max_min,1)
+
+	Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
+	Ones = tf.ones(OutShape, tf.float32)
+
+	DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps)), [1,2])
+	DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps)), [1,2])
+
+	DiffList = []
+	for k in range(NumClasses):
+		x = DiffZeros[:,k]
+		y = tf.reduce_sum(DiffZeros, 1)
+		DiffList.append(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k])
+
+
+	Diffs = tf.stack(DiffList)
+	Pred = tf.argmin(Diffs,0)
 	CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
 	Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
 
@@ -90,7 +104,7 @@ Init = tf.global_variables_initializer()
 
 # create sumamries, these will be shown on tensorboard
 
-# histogram sumamries about the distributio nof the variables
+# histogram sumamries about the distribution of the variables
 for v in tf.trainable_variables():
 	tf.summary.histogram(v.name[:-2], v)
 
@@ -107,7 +121,7 @@ SummaryOp = tf.summary.merge_all()
 conf = tf.ConfigProto(allow_soft_placement = True)
 conf.gpu_options.per_process_gpu_memory_fraction = 0.2
 
-checkpoint = './saved/max/model'
+checkpoint = './saved/euclidean/model'
 
 # launch the session with default graph
 with tf.Session(config = conf) as Sess:
@@ -126,14 +140,14 @@ with tf.Session(config = conf) as Sess:
 
 		Acc = Sess.run(Accuracy, feed_dict = {InputData: Data, InputLabels: Label})
 
+
 		if not Step % PrintFreq:
 			print("Iteration:", Step)
 			print("Accuracy:", Acc)
 
-
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
-			TotalAcc=0;
+			TotalAcc=0
 			Data=np.zeros([BatchLength]+Size)
 			ct = 0
 			for i in range(0,TestData.shape[0],BatchLength):
