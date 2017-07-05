@@ -24,7 +24,7 @@ Size=[28, 28, 1] #Input img will be resized to this size
 NumIteration=250000;
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-EvalFreq=500 #evaluate on every 100th iteration
+EvalFreq=500 #evaluate on every EvalFreq iterations
 SaveFreq=100000
 
 #load data
