@@ -61,14 +61,11 @@ def MakeConvNet(Input,Size):
 			#gamma = tf.get_variable('gamma',[NumKernel],initializer=tf.constant_initializer(1.0))
 			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
 			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
-	
-			#ReLU = tf.nn.relu(ConvResult)
-			#leaky ReLU
-			alpha=0.01
-			ReLU=tf.maximum(-1 + alpha*(ConvResult+1),ConvResult)
-			ReLU=tf.minimum(1 + alpha*(ReLU-1),ReLU)
 
-			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID')
+			#ReLU
+			ELU = tf.nn.relu(ConvResult)
+
+			CurrentInput = tf.nn.max_pool(ELU,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID')
 	
 	#add fully connected network
 	with tf.variable_scope('FC'):
@@ -82,11 +79,9 @@ def MakeConvNet(Input,Size):
 		FC = tf.nn.dropout(FC, KeepProb)
 		
 		#ReLU
-		alpha=0.01
-		ReLU=tf.maximum(-1 + alpha*(FC+1),FC)
-		ReLU=tf.minimum(1 + alpha*(ReLU-1),ReLU)
-				
-	return ReLU 
+		ELU = tf.nn.relu(FC)
+
+	return ELU
 
 	
 # Construct model
