@@ -20,8 +20,8 @@ dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
 flags.DEFINE_string('summary_dir', '/tmp/EEG/{}'.format(dt), 'Summaries directory')
 
 # parameters
-BatchLength = 32  # 32 images are in a minibatch
-Size = 2500
+BatchLength = 25  # 32 images are in a minibatch
+Size = [2500, 1]
 NumIteration = 500
 LearningRate = 1e-4 # learning rate of the algorithm
 NumClasses = 2 # number of output classes
@@ -31,8 +31,8 @@ EvalFreq = 50 # evaluate on every 1000th iteration
 
 
 # create tensorflow graph
-InputData = tf.placeholder(tf.float32, [None, Size]) # network input
-SupportData = tf.placeholder(tf.float32, [None, NumSupportsPerClass, NumClasses, Size])
+InputData = tf.placeholder(tf.float32, [None, Size[0], Size[1]]) # network input
+SupportData = tf.placeholder(tf.float32, [None, NumSupportsPerClass, NumClasses, Size[0], Size[1]])
 InputLabels = tf.placeholder(tf.int32, [None]) # desired network output
 OneHotLabels = tf.one_hot(InputLabels, NumClasses)
 #KeepProb = tf.placeholder(tf.float32) # dropout (keep probability -currently not used)
@@ -46,7 +46,7 @@ labels_in = np.load('{}split_person_labels.npy'.format(directory))
 NumElementsPerClass = data_in.shape[0] / NumClasses
 TrainSize = 15
 TestSize = NumElementsPerClass - TrainSize
-Data = np.zeros([NumClasses, NumElementsPerClass, Size])
+Data = np.zeros([NumClasses, NumElementsPerClass, Size[0]])
 Labels = np.zeros([NumClasses, NumElementsPerClass])
 for k in range(NumClasses):
 	k_inds = np.argwhere(labels_in==k)[0]
@@ -55,7 +55,13 @@ for k in range(NumClasses):
 TrainData = Data[:,0:TrainSize]
 TrainLabels = Labels[:,0:TrainSize]
 TestData = Data[:,TrainSize:TrainSize+TestSize]
-TestLabels = Data[:,TrainSize:TrainSize+TestSize]
+TestLabels = Labels[:,TrainSize:TrainSize+TestSize]
+
+#reshape to put both classes in same dimension
+TrainData = np.reshape(TrainData, [TrainSize*NumClasses, Size[0]])
+TrainLabels = np.reshape(TrainLabels, [TrainSize*NumClasses])
+TestData = np.reshape(TestData, [TestSize*NumClasses, Size[0]])
+TestLabels = np.reshape(TestLabels, [TestSize*NumClasses])
 
 #randomize order
 permutation = np.random.permutation(TrainData.shape[0])
@@ -67,6 +73,12 @@ TestLabels = TestLabels[permutation]
 
 
 def make_support_set(Data, Labels):
+	
+	#randomize so you don't always pick the same datapoints
+	permutation = np.random.permutation(Data.shape[0])
+	Data = Data[permutation]
+	Labels = Labels[permutation]
+
 	SupportDataList = []
 	QueryDataList = []
 	QueryLabelList = []
@@ -84,15 +96,15 @@ def make_support_set(Data, Labels):
 
 		for j in range(NumClasses):
 			if (j == QueryClass):
-				SupportDataList[i].append(np.squeeze(Data[QueryIndices[1 : 1 + NumSupportsPerClass]], 1))
+				SupportDataList[i].append(np.squeeze(Data[QueryIndices[1 : 1 + NumSupportsPerClass]], axis=1))
 			else:
 				SupportIndices = np.argwhere(Labels == j)
-				SupportDataList[i].append(np.squeeze(Data[SupportIndices[0 : NumSupportsPerClass]], 1))
+				SupportDataList[i].append(np.squeeze(Data[SupportIndices[0 : NumSupportsPerClass]], axis=1))
 
 
-	QueryData = np.reshape(QueryDataList, [BatchLength, Size])
-	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size])
-	SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
+	QueryData = np.reshape(QueryDataList, [BatchLength, Size[0], Size[1]])
+	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1]])
+	SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4))
 	Label = np.reshape(QueryLabelList, [BatchLength])
 	return QueryData, SupportDataList, Label
 
@@ -100,18 +112,19 @@ NumKernels = [32, 32, 32]
 def MakeConvNet(Input, Size, First = False):
 	CurrentInput = Input
 	CurrentInput = (CurrentInput / 255.0) - 0.5
-	CurrentFilters = 1 # the input dim at the first layer is 1, since the input image is grayscale
+	CurrentFilters = Size[-1] # the input dim at the first layer is 1, since the input image is grayscale
 	for i in range(len(NumKernels)): # number of layers
 		with tf.variable_scope('conv' + str(i)) as varscope:
-			#if not First:
-				#varscope.reuse_variables()
+			if not First:
+				varscope.reuse_variables()
 			NumKernel = NumKernels[i]
-			W = tf.get_variable('W',[15,CurrentFilters,NumKernel])
+			W = tf.get_variable('W',[7,CurrentFilters,NumKernel])
 
 			Bias = tf.get_variable('Bias', [NumKernel], initializer = tf.constant_initializer(0.1))
 
 			CurrentFilters = NumKernel
-			ConvResult = tf.nn.conv1d(CurrentInput, W, stride = 15, padding = 'VALID') #VALID, SAME
+
+			ConvResult = tf.nn.conv1d(CurrentInput, W, stride = 5, padding = 'VALID') #VALID, SAME
 			ConvResult= tf.add(ConvResult, Bias)
 
 			# ReLU = tf.nn.relu(ConvResult)
@@ -120,19 +133,25 @@ def MakeConvNet(Input, Size, First = False):
 			alpha = 0.01
 			ReLU = tf.maximum(alpha * ConvResult, ConvResult)
 
-			CurrentInput = tf.nn.max_pool(ReLU, ksize = [1, 5, 1, 1], strides = [1, 1, 1, 1], padding = 'VALID') # this should be 1, 1, 1, 1 for both if the network is CNN friendly
+			ReLU = tf.expand_dims(ReLU,1)
+
+			# this should be 1, 1, 1, 1 for both if the network is CNN friendly
+			CurrentInput = tf.nn.max_pool(ReLU, ksize = [1, 1, 5, 1], strides = [1, 1, 1, 1], padding = 'VALID') 
+			CurrentInput = tf.squeeze(CurrentInput, squeeze_dims=1)
+
 
 	return CurrentInput
 
 with tf.name_scope('network'):
 
 	encodedQuery = MakeConvNet(InputData, Size, First = True)
+	print('eq', encodedQuery.shape)
 	SupportList = []
 	QueryList = []
 
 	for i in range(NumClasses):
 		for k in range(NumSupportsPerClass):
-			SupportList.append(MakeConvNet(SupportData[:, k, i, :, :, :], Size))
+			SupportList.append(MakeConvNet(SupportData[:, k, i, :, :], Size))
 			QueryList.append(encodedQuery)
 
 	QueryRepeat = tf.stack(QueryList)
@@ -143,9 +162,9 @@ with tf.name_scope('loss'):
 	'''calculate cosine similarity between encodedQuery and everything in Supports
 	(A*B)/(|A||B|)'''
 
-	DotProduct = tf.reduce_sum(tf.multiply(QueryRepeat, Supports), [2, 3, 4])
+	DotProduct = tf.reduce_sum(tf.multiply(QueryRepeat, Supports), [2, 3])
 	#QueryMag = tf.sqrt(tf.reduce_sum(tf.square(QueryRepeat), [2, 3, 4]))
-	SupportsMag = tf.sqrt(tf.reduce_sum(tf.square(Supports), [2, 3, 4]))
+	SupportsMag = tf.sqrt(tf.reduce_sum(tf.square(Supports), [2, 3]))
 	CosSim = DotProduct / tf.clip_by_value(SupportsMag, 1e-10, float("inf"))
 
 	CosSim = tf.reshape(CosSim, [NumClasses, NumSupportsPerClass, -1])
@@ -153,7 +172,7 @@ with tf.name_scope('loss'):
 
 	probs = tf.nn.softmax(CosSim)
 
-	Loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(OneHotLabels, CosSim))
+	Loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(OneHotLabels, probs))
 
 with tf.name_scope('optimizer'):
 		# use ADAM optimizer this is currently the best performing training algorithm in most cases
@@ -197,16 +216,17 @@ with tf.Session(config = conf) as Sess:
 	# keep training until reach max iterations - other stopping criterion could be added
 	for Step in range(1, NumIteration + 1):
 
-			TrainData, TrainLabels = get_train_data(datalist)
-			# need to change make_support_set to create all combinations
-			# need to calculate the accuracy for each combination and keep track of which pair of supports produces the max accuracy
 			QueryData, SupportDataList, Label = make_support_set(TrainData, TrainLabels)
 
-			# execute teh session
-			Summary, _, Acc, L, p, c, cp = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, Pred, Correct, CorrectPredictions],
-				feed_dict = {InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 
-			if (Step % 10 == 0):
+			# execute the session
+			Summary, _, Acc, L, p, c, pbs = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, Pred, Correct, probs],
+				feed_dict = {InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
+			print(pbs[0:10])
+			print(p[0:10])
+			print(c[0:10])
+
+			if (Step % 1 == 0):
 				print("Iteration: " + str(Step))
 				print("Accuracy: " + str(Acc))
 				print("Loss: " + str(L))
@@ -216,7 +236,6 @@ with tf.Session(config = conf) as Sess:
 				TotalAcc = 0
 				count = 0
 				for i in range(BatchLength):
-					TestData, TestLabels = get_test_data(datalist)
 					TestData, SuppData, TestLabels = make_support_set(TestData, TestLabels)
 
 					Acc = Sess.run(Accuracy, feed_dict = {InputData: TestData, InputLabels: TestLabels, SupportData: SuppData})
