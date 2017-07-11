@@ -5,7 +5,6 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
-import cv2
 
 #set summary dir for tensorflow with FLAGS
 flags = tf.app.flags
@@ -169,7 +168,7 @@ with tf.Session(config=conf) as Sess:
 				#print(response)
 				if np.argmax(response)==Label:
 					TotalAcc+=1
-			IndepAcc = float(TotalAcc/TestData.shape[0])
+			IndepAcc = 1.*TotalAcc/TestData.shape[0]
 			print("Independent Test set: "+str(IndepAcc))
 		
 		#print("Loss:" + str(L))
