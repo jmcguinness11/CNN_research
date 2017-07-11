@@ -24,7 +24,7 @@ BatchLength = 25  # 32 images are in a minibatch
 Size = [2500, 1]
 NumIteration = 500
 LearningRate = 1e-4 # learning rate of the algorithm
-NumClasses = 2 # number of output classes
+NumClasses = 4 # number of output classes
 NumSupportsPerClass = 2
 NumClassesInSubSet = 2
 EvalFreq = 50 # evaluate on every 1000th iteration
@@ -39,8 +39,8 @@ OneHotLabels = tf.one_hot(InputLabels, NumClasses)
 
 # Load in EEG data
 directory = './PersonData/'
-data_in = np.load('{}split_person_data.npy'.format(directory))
-labels_in = np.load('{}split_person_labels.npy'.format(directory))
+data_in = np.load('{}split_person_data_4.npy'.format(directory))
+labels_in = np.load('{}split_person_labels_4.npy'.format(directory))
 
 # restructure data to have a train and a test set
 NumElementsPerClass = data_in.shape[0] / NumClasses
@@ -49,6 +49,7 @@ TestSize = NumElementsPerClass - TrainSize
 Data = np.zeros([NumClasses, NumElementsPerClass, Size[0]])
 Labels = np.zeros([NumClasses, NumElementsPerClass])
 for k in range(NumClasses):
+	print(k)
 	k_inds = np.argwhere(labels_in==k)[0]
 	Data[k] = data_in[k_inds]
 	Labels[k] = labels_in[k_inds]
