@@ -56,10 +56,10 @@ OneHotLabels = tf.one_hot(InputLabels, NumClasses)
 KeepProb = tf.placeholder(tf.float32)  # dropout (keep probability)
 
 def AddRelUfc(Input):
-    return tf.nn.relu(Input)
+    return tf.nn.elu(Input)
 
 def AddRelUconv(Input):
-    return tf.nn.relu(Input)
+    return tf.nn.elu(Input)
 
 def MakeAlexNet(Input, Size, KeepProb):
     CurrentInput = Input  # 227,227,3
@@ -165,6 +165,7 @@ with tf.name_scope('loss'):
     GTMap = tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
 
     GTMap = tf.cast(GTMap,tf.float32)
+    print(GTMap.shape, OutMaps.shape)
     DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
     Loss=tf.reduce_sum(DiffMap)
 
@@ -256,7 +257,6 @@ with tf.device('/gpu:0'):
             #independent test accuracy
             if (Step%EvalFreq)==0:          
                 TotalAcc=0;
-                Data=np.zeros([BatchLength]+Size)
                 for i in range(0,TestData.shape[0],BatchLength):
                     if TestData.shape[0] - i < 25:
                         break
@@ -265,19 +265,20 @@ with tf.device('/gpu:0'):
                     for i in range(BatchLength):
                         InData[i,:,:,:] = cv2.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
                     Label=TestLabels[i:(i+BatchLength)]
+                    Label = np.reshape(Label,(BatchLength))
                     P = Sess.run(Pred, feed_dict={InputData: InData})
                     for i in range(len(P)):
                         if P[i]==Label[i]:
                             TotalAcc+=1
 
-                print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
+                print("Independent Test set: "+str(float(1.*TotalAcc)/TestData.shape[0]))
             #print("Loss:" + str(L))
         
             SummaryWriter.add_summary(Summary,Step)
             Step+=1
 
-        print('Saving model...')
-        print(Saver.save(Sess, "./saved/euclidean/model"))
+        #print('Saving model...')
+        #print(Saver.save(Sess, "./saved/alexnet/model"))
 
     print("Optimization Finished!")
     print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
