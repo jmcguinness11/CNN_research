@@ -262,13 +262,13 @@ with tf.device('/gpu:0'):
                         break
                     Data=TestData[i:(i+BatchLength)]
                     InData = np.zeros((BatchLength, Size[0], Size[1], Size[2]))
-                    for i in range(BatchLength):
-                        InData[i,:,:,:] = cv2.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
+                    for j in range(BatchLength):
+                        InData[j,:,:,:] = cv2.cvtColor(cv2.resize(Data[j,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
                     Label=TestLabels[i:(i+BatchLength)]
                     Label = np.reshape(Label,(BatchLength))
                     P = Sess.run(Pred, feed_dict={InputData: InData})
-                    for i in range(len(P)):
-                        if P[i]==Label[i]:
+                    for j in range(len(P)):
+                        if P[j]==Label[j]:
                             TotalAcc+=1
 
                 print("Independent Test set: "+str(float(1.*TotalAcc)/TestData.shape[0]))
