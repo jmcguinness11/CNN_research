@@ -6,7 +6,6 @@ import numpy as np
 import datetime
 import random
 import cv2
-
 # set summary dir for tensorflow with FLAGS
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -262,8 +261,11 @@ with tf.device('/gpu:0'):
                     if TestData.shape[0] - i < 25:
                         break
                     Data=TestData[i:(i+BatchLength)]
+                    InData = np.zeros((BatchLength, Size[0], Size[1], Size[2]))
+                    for i in range(BatchLength):
+                        InData[i,:,:,:] = cvw.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
                     Label=TestLabels[i:(i+BatchLength)]
-                    P = Sess.run(Pred, feed_dict={InputData: Data})
+                    P = Sess.run(Pred, feed_dict={InputData: InData})
                     for i in range(len(P)):
                         if P[i]==Label[i]:
                             TotalAcc+=1
