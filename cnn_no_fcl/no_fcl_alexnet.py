@@ -23,11 +23,11 @@ flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 
 BatchLength = 32  # 32 images are in a minibatch
 Size = [227, 227, 3]  # Input img will be resized to this size
 #Size = [28, 28, 1]
-NumIteration = 1010
+NumIteration = 10000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
-EvalFreq = 100  # evaluate on every 100th iteration
+EvalFreq = 250  # evaluate on every 100th iteration
 
 """
 # load data
@@ -218,7 +218,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2  # fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.8  # fraction of GPU used
 
 with tf.device('/gpu:0'):
     with tf.Session(config=conf) as Sess:
@@ -248,7 +248,7 @@ with tf.device('/gpu:0'):
                                              InputData: InData, InputLabels: Label, KeepProb: Dropout})
 
             # print loss and accuracy at every 10th iteration
-            if (Step % 10) == 0:
+            if (Step % 50) == 0:
                 # train accuracy
                 print("Iteration: " + str(Step))
                 print("Accuracy:" + str(Acc))
