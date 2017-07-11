@@ -263,7 +263,7 @@ with tf.device('/gpu:0'):
                     Data=TestData[i:(i+BatchLength)]
                     InData = np.zeros((BatchLength, Size[0], Size[1], Size[2]))
                     for i in range(BatchLength):
-                        InData[i,:,:,:] = cvw.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
+                        InData[i,:,:,:] = cv2.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
                     Label=TestLabels[i:(i+BatchLength)]
                     P = Sess.run(Pred, feed_dict={InputData: InData})
                     for i in range(len(P)):
