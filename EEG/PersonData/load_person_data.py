@@ -8,33 +8,40 @@ def load_data(filename):
 	return data
 
 #parameters
-stride = 2900
-buff_size = 200
+stride = 2700
+buff_size = 100
 sample_size = stride - 2 * buff_size
 path = './'
-NumFiles = 6
+NumFilesPerClass = 3
 NumSamples = 10
+NumClasses = 4
+NumFiles = NumFilesPerClass * NumClasses
 	
 #numpy matrices to store the data
 splitData = np.zeros([NumFiles, NumSamples, sample_size])
 splitLabels = np.zeros([NumFiles, NumSamples])
 
 for i in range(NumFiles):
-	if not i % 2:
+	if i % NumClasses == 0:
 		name = 'john'
-	else:
+	elif i % NumClasses == 1:
 		name = 'kathryn'
+	elif i % NumClasses == 2:
+		name = 'sophie'
+	else:
+		name = 'andres'
 	
-	filenum = int(i/2) + 1
+	filenum = int(i/NumClasses) + 1
 	print(filenum)
 	filename = '{}{}{}.csv'.format(path, name, str(filenum))
 	data = load_data(filename)
+	print(data.shape)
 
 	idx = 0
 	for j in range(NumSamples):
 		splitData[i, j, :] = data[idx + buff_size : idx + stride - buff_size]
 		idx += stride
-		splitLabels[i, j] = i%2
+		splitLabels[i, j] = i%NumClasses
 
 splitData = np.reshape(splitData, [NumFiles * NumSamples, sample_size])
 splitLabels = np.reshape(splitLabels, [NumFiles * NumSamples])
@@ -42,5 +49,5 @@ splitLabels = np.reshape(splitLabels, [NumFiles * NumSamples])
 print(splitData.shape)
 print(splitLabels)
 
-np.save('split_person_data', splitData)
-np.save('split_person_labels', splitLabels)
+np.save('split_person_data_4', splitData)
+np.save('split_person_labels_4', splitLabels)
