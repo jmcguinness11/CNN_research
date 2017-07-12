@@ -12,7 +12,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/home/horan/mnist/alexnet/logs/mnist/baseline/{}'.format(dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/alexnet/mnist/logs/mnist/baseline/{}'.format(dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
 # if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -40,7 +40,6 @@ TestLabels = np.load('{}Cifar_test_labels.npy'.format(directory))
 
 # load data
 directory = '../MNIST_data/'
-#directory = '/Users/johnmcguinness/Dropbox/Notre Dame/Budapest/tensorflow_tutorials/MNIST_practice/'
 TrainData = np.load('{}full_train_images.npy'.format(directory))
 TrainLabels = np.load('{}full_train_labels.npy'.format(directory))
 TestData = np.load('{}full_test_images.npy'.format(directory))
