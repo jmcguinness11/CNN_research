@@ -12,7 +12,7 @@ FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dataset = 'mnist'
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/cn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
 # if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -21,13 +21,13 @@ flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 
 
 # Parameters
 BatchLength = 32  # 32 images are in a minibatch
-Size = [227, 227, 3]  # Input img will be resized to this size
-#Size = [28, 28, 1]
-NumIteration = 10000
+#Size = [227, 227, 3]  # Input img will be resized to this size
+Size = [128, 128, 1]
+NumIteration = 1010
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
-EvalFreq = 250  # evaluate on every 100th iteration
+EvalFreq = 100  # evaluate on every 100th iteration
 
 """
 # load data
@@ -66,7 +66,7 @@ def MakeAlexNet(Input, Size, KeepProb):
     CurrentInput =CurrentInput /255.0
     with tf.variable_scope('conv1'):
         # first convolution
-        W = tf.get_variable('W', [11, 11, 3, 96])
+        W = tf.get_variable('W', [11, 11, Size[2], 96])
         Bias = tf.get_variable(
             'Bias', [96], initializer=tf.constant_initializer(0.1))
         ConvResult1 = tf.nn.conv2d(CurrentInput, W, strides=[
@@ -218,7 +218,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.8  # fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.2  # fraction of GPU used
 
 with tf.device('/gpu:0'):
     with tf.Session(config=conf) as Sess:
@@ -240,15 +240,18 @@ with tf.device('/gpu:0'):
             Label = np.reshape(Label, (BatchLength))
             #!!!resize the data, this should not be here...just for testing
             for i in range(BatchLength):
-                InData[i,:,:,:]= cv2.cvtColor(cv2.resize(Data[i,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
-                #InData[i, :, :, :] = cv2.resize( Data[i, :, :, :], (227, 227))
+                if Size[2]==1:
+                    InData[i, :, :, :] = np.reshape(cv2.resize( Data[i, :, :, :], (Size[0],Size[1])),(Size[0],Size[1],Size[2]))
+                else:
+                    InData[i, :, :, :] = cv2.resize( Data[i, :, :, :], (Size[0],Size[1]))
+
 
             # execute teh session
             Summary, _, Acc, L, P = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, OutMaps], feed_dict={
                                              InputData: InData, InputLabels: Label, KeepProb: Dropout})
 
             # print loss and accuracy at every 10th iteration
-            if (Step % 50) == 0:
+            if (Step % 10) == 0:
                 # train accuracy
                 print("Iteration: " + str(Step))
                 print("Accuracy:" + str(Acc))
@@ -263,7 +266,10 @@ with tf.device('/gpu:0'):
                     Data=TestData[i:(i+BatchLength)]
                     InData = np.zeros((BatchLength, Size[0], Size[1], Size[2]))
                     for j in range(BatchLength):
-                        InData[j,:,:,:] = cv2.cvtColor(cv2.resize(Data[j,:,:,:],(227,227)),cv2.COLOR_GRAY2RGB)
+                        if Size[2]==1:
+                        	InData[j, :, :, :] = np.reshape(cv2.resize( Data[j, :, :, :], (Size[0],Size[1])),(Size[0],Size[1],Size[2]))
+                        else:
+                                InData[j, :, :, :] = cv2.resize( Data[j, :, :, :], (Size[0],Size[1]))
                     Label=TestLabels[i:(i+BatchLength)]
                     Label = np.reshape(Label,(BatchLength))
                     P = Sess.run(Pred, feed_dict={InputData: InData})
