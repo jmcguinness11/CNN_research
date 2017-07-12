@@ -22,7 +22,7 @@ flags.DEFINE_string('summary_dir', '/tmp/alexnet/mnist/logs/mnist/baseline/{}'.f
 # Parameters
 BatchLength = 32  # 32 images are in a minibatch
 Size = [227, 227, 3]  # Input img will be resized to this size
-NumIteration = 1010
+NumIteration = 100000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
