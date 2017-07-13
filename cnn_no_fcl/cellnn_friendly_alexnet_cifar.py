@@ -24,7 +24,7 @@ BatchLength = 32  # 32 images are in a minibatch
 #Size = [227, 227, 3]  # Input img will be resized to this size
 #Size = [128, 128, 1]
 Size = [128, 128, 3]
-NumIteration = 25000
+NumIteration = 100000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
@@ -218,7 +218,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2  # fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.14  # fraction of GPU used
 
 with tf.device('/gpu:0'):
     with tf.Session(config=conf) as Sess:

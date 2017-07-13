@@ -12,7 +12,7 @@ FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dataset = 'mnist'
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/cn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
 # if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -23,7 +23,7 @@ flags.DEFINE_string('summary_dir', '/tmp/cn_no_fcl/{}/{}'.format(dataset, dt), '
 BatchLength = 32  # 32 images are in a minibatch
 #Size = [227, 227, 3]  # Input img will be resized to this size
 Size = [128, 128, 1]
-NumIteration = 1010
+NumIteration = 100000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
