@@ -10,7 +10,7 @@ import cv2
 flags = tf.app.flags
 FLAGS = flags.FLAGS
 now = datetime.datetime.now()
-dataset = 'mnist'
+dataset = 'cifar'
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
 flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
@@ -22,14 +22,14 @@ flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 
 # Parameters
 BatchLength = 32  # 32 images are in a minibatch
 #Size = [227, 227, 3]  # Input img will be resized to this size
-Size = [128, 128, 1]
+Size = [128, 128, 3]
 NumIteration = 1010
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
 EvalFreq = 100  # evaluate on every 100th iteration
 
-"""
+
 # load data
 directory = '../CIFAR_data/'
 #directory = '/Users/johnmcguinness/Dropbox/Notre Dame/Budapest/tensorflow_tutorials/MNIST_practice/'
@@ -37,15 +37,16 @@ TrainData = np.load('{}Cifar_train_data.npy'.format(directory))
 TrainLabels = np.load('{}Cifar_train_labels.npy'.format(directory))
 TestData = np.load('{}Cifar_test_data.npy'.format(directory))
 TestLabels = np.load('{}Cifar_test_labels.npy'.format(directory))
-"""
 
+
+'''
 # load data
 directory = '../MNIST_data/'
 TrainData = np.load('{}full_train_images.npy'.format(directory))
 TrainLabels = np.load('{}full_train_labels.npy'.format(directory))
 TestData = np.load('{}full_test_images.npy'.format(directory))
 TestLabels = np.load('{}full_test_labels.npy'.format(directory))
-
+'''
 
 
 # Create tensorflow graph
