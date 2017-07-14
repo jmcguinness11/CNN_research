@@ -12,7 +12,7 @@ FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dataset = 'mnist'
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/cn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
 # if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)

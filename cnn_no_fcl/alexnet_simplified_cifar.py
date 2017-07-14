@@ -12,7 +12,7 @@ FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dataset = 'mnist'
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/alexnet/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/cnn_no_fcl/{}/{}'.format(dataset, dt), 'Summaries directory')
 # if summary directory exist, delete the previous summaries
 # if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -21,13 +21,14 @@ flags.DEFINE_string('summary_dir', '/tmp/alexnet/cnn_no_fcl/{}/{}'.format(datase
 
 # Parameters
 BatchLength = 32  # 32 images are in a minibatch
-Size = [32, 32, 3]  # Input img will be resized to this size
-#Size = [28, 28, 1]
+#Size = [227, 227, 3]  # Input img will be resized to this size
+Size = [128, 128, 3]
 NumIteration = 100000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
-EvalFreq = 100  # evaluate on every 100th iteration
+EvalFreq =100  # evaluate on every 100th iteration
+FcVectorLength= 4096
 
 
 # load data
@@ -66,21 +67,27 @@ def MakeAlexNet(Input, Size, KeepProb):
     CurrentInput =CurrentInput /255.0
     with tf.variable_scope('conv1'):
         # first convolution
-        W = tf.get_variable('W', [3, 3, Size[2], 96])
+        W = tf.get_variable('W', [11, 11, Size[2], 96])
         Bias = tf.get_variable(
             'Bias', [96], initializer=tf.constant_initializer(0.1))
         ConvResult1 = tf.nn.conv2d(CurrentInput, W, strides=[
-                                   1, 1, 1, 1], padding='SAME')  # VALID, SAME
+                                   1, 4, 4, 1], padding='SAME')  # VALID, SAME
         ConvResult1 = tf.add(ConvResult1, Bias)
         # first relu
         ReLU1 = AddRelUconv(ConvResult1)
         # response normalization
+        radius = 2
+        alpha = 2e-05
+        beta = 0.75
+        bias = 1.0
+        Norm1 = tf.nn.local_response_normalization(
+            ReLU1, depth_radius=radius, alpha=alpha, beta=beta, bias=bias)
         # first pooling
-        Pool1 = tf.nn.max_pool(ReLU1 , ksize=[1, 3, 3, 1], strides=[
-                               1, 1, 1, 1], padding='VALID')
+        Pool1 = tf.nn.max_pool(Norm1, ksize=[1, 3, 3, 1], strides=[
+                               1, 2, 2, 1], padding='VALID')
     with tf.variable_scope('conv2'):
         # second convolution
-        W = tf.get_variable('W', [3, 3, 96, 256])
+        W = tf.get_variable('W', [5, 5, 96, 256])
         Bias = tf.get_variable(
             'Bias', [256], initializer=tf.constant_initializer(0.1))
         ConvResult2 = tf.nn.conv2d(
@@ -89,9 +96,15 @@ def MakeAlexNet(Input, Size, KeepProb):
         # second relu
         ReLU2 = AddRelUconv(ConvResult2)
         # response normalization
+        radius = 2
+        alpha = 2e-05
+        beta = 0.75
+        bias = 1.0
+        Norm2 = tf.nn.local_response_normalization(
+            ReLU2, depth_radius=radius, alpha=alpha, beta=beta, bias=bias)
         # second pooling
-        Pool2 = tf.nn.max_pool(ReLU2 , ksize=[1, 3, 3, 1], strides=[
-                               1, 1, 1, 1], padding='VALID')
+        Pool2 = tf.nn.max_pool(Norm2, ksize=[1, 3, 3, 1], strides=[
+                               1, 2, 2, 1], padding='VALID')
     with tf.variable_scope('conv3'):
         # third convolution
         W = tf.get_variable('W', [3, 3, 256, 384])
@@ -123,64 +136,67 @@ def MakeAlexNet(Input, Size, KeepProb):
         # fifth relu
         ReLU5 = AddRelUconv(ConvResult5)
         # fifth pooling
-        Pool3 = tf.nn.max_pool(ReLU5, ksize=[1, 3, 3, 1], strides=[
-                               1, 1, 1, 1], padding='VALID')
-    with tf.variable_scope('conv_out'):
-        # fifth convolution
-        W = tf.get_variable('W', [3, 3, 256, 10])
+        Pool5 = tf.nn.max_pool(ReLU5, ksize=[1, 3, 3, 1], strides=[
+                               1, 2, 2, 1], padding='VALID')
+    with tf.variable_scope('FC1'):
+        # first Fully-connected layer
+        CurrentShape = Pool5.get_shape()
+        FeatureLength = int(
+            CurrentShape[1] * CurrentShape[2] * CurrentShape[3])
+        FC = tf.reshape(Pool5, [-1, FeatureLength])
+        W = tf.get_variable('W', [FeatureLength, FcVectorLength])
+        FC = tf.matmul(FC, W)
         Bias = tf.get_variable(
-            'Bias', [10], initializer=tf.constant_initializer(0.1))
-        ConvResultOut = tf.nn.conv2d(
-            Pool3, W, strides=[1, 1, 1, 1], padding='SAME')  # VALID, SAME
-        ConvResultOut = tf.add(ConvResultOut, Bias)
-        # final relu
-        Out = AddRelUconv(ConvResultOut)
-
-
+            'Bias', [FcVectorLength], initializer=tf.constant_initializer(0.1))
+        FC = tf.add(FC, Bias)
+        # relu
+        FCReLU1 = AddRelUfc(FC)
+    with tf.variable_scope('FC2'):
+        # first Fully-connected layer
+        FC = tf.reshape(FCReLU1, [-1, FcVectorLength])
+        W = tf.get_variable('W', [FcVectorLength, FcVectorLength])
+        FC = tf.matmul(FC, W)
+        Bias = tf.get_variable(
+            'Bias', [FcVectorLength], initializer=tf.constant_initializer(0.1))
+        FC = tf.add(FC, Bias)
+        # relu
+        FC = tf.nn.dropout(FC, KeepProb)
+        FCReLU2 =  tf.nn.relu(FC)
+        #FCReLU2 = AddRelUfc(FC)
+    with tf.variable_scope('FC3'):
+        # first Fully-connected layer
+        FC = tf.reshape(FCReLU2, [-1, FcVectorLength])
+        W = tf.get_variable('W', [FcVectorLength, NumClasses])
+        FC = tf.matmul(FC, W)
+        Bias = tf.get_variable(
+            'Bias', [NumClasses], initializer=tf.constant_initializer(0.1))
+        FC = tf.add(FC, Bias)
+        # no relu at the end
+        Out = FC
     return Out
 
 
 # Construct model
-OutMaps = MakeAlexNet(InputData, Size, KeepProb)
-OutShape = OutMaps.shape
-OutShape = [BatchLength, OutShape[1], OutShape[2], OutShape[3]]
+PredWeights = MakeAlexNet(InputData, Size, KeepProb)
 
 
 # Define loss and optimizer
 with tf.name_scope('loss'):
-    LabelIndices=tf.expand_dims(tf.expand_dims(OneHotLabels,1),1)  #32
-
-    GTMap = tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
-
-    GTMap = tf.cast(GTMap,tf.float32)
-    print(GTMap.shape, OutMaps.shape)
-    DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
-    Loss=tf.reduce_sum(DiffMap)
+    Loss = tf.reduce_mean(
+        tf.losses.softmax_cross_entropy(OneHotLabels, PredWeights))
 
 with tf.name_scope('optimizer'):
     # Use ADAM optimizer this is currently the best performing training algorithm in most cases
     Optimizer = tf.train.AdamOptimizer(LearningRate).minimize(Loss)
+    #Optimizer = tf.train.GradientDescentOptimizer(0.5).minimize(Loss)
+    #Optimizer = tf.train.GradientDescentOptimizer(LearningRate).minimize(Loss)
 
 with tf.name_scope('accuracy'):
-    Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
-    Ones = tf.ones(OutShape, tf.float32)
-
-    print(Zeros.shape)
-
-    DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps)), [1,2])
-    DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps)), [1,2])
-
-    DiffList = []
-    for k in range(NumClasses):
-        x = DiffZeros[:,k]
-        y = tf.reduce_sum(DiffZeros, 1)
-        DiffList.append(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k])
+    CorrectPredictions = tf.equal(
+        tf.argmax(PredWeights, 1), tf.argmax(OneHotLabels, 1))
+    Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions, tf.float32))
 
 
-    Diffs = tf.stack(DiffList)
-    Pred = tf.argmin(Diffs,0)
-    CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
-    Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
 
 
 # Initializing the variables
@@ -206,7 +222,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.12  # fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.2  # fraction of GPU used
 
 with tf.device('/gpu:0'):
     with tf.Session(config=conf) as Sess:
@@ -235,7 +251,7 @@ with tf.device('/gpu:0'):
 
 
             # execute teh session
-            Summary, _, Acc, L, P = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, OutMaps], feed_dict={
+            Summary, _, Acc, L = Sess.run([SummaryOp, Optimizer, Accuracy, Loss], feed_dict={
                                              InputData: InData, InputLabels: Label, KeepProb: Dropout})
 
             # print loss and accuracy at every 10th iteration
@@ -247,7 +263,8 @@ with tf.device('/gpu:0'):
 
             #independent test accuracy
             if (Step%EvalFreq)==0:          
-                TotalAcc=0;
+                TotalAcc=0.0;
+                TotalMesNum=0;
                 for i in range(0,TestData.shape[0],BatchLength):
                     if TestData.shape[0] - i < 25:
                         break
@@ -260,12 +277,10 @@ with tf.device('/gpu:0'):
                                 InData[j, :, :, :] = cv2.resize( Data[j, :, :, :], (Size[0],Size[1]))
                     Label=TestLabels[i:(i+BatchLength)]
                     Label = np.reshape(Label,(BatchLength))
-                    P = Sess.run(Pred, feed_dict={InputData: InData})
-                    for j in range(len(P)):
-                        if P[j]==Label[j]:
-                            TotalAcc+=1
-
-                print("Independent Test set: "+str(float(1.*TotalAcc)/TestData.shape[0]))
+                    P,A = Sess.run([PredWeights,Accuracy], feed_dict={InputData: InData, InputLabels: Label, KeepProb: 1.0})
+                    TotalAcc+=A
+                    TotalMesNum+=1
+                print("Independent Test set: "+str(float(TotalAcc)/float(TotalMesNum)))
             #print("Loss:" + str(L))
         
             SummaryWriter.add_summary(Summary,Step)
@@ -276,4 +291,21 @@ with tf.device('/gpu:0'):
 
     print("Optimization Finished!")
     print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
