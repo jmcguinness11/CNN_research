@@ -22,11 +22,12 @@ flags.DEFINE_string('summary_dir', '/tmp/EEG/{}'.format(dt), 'Summaries director
 # parameters
 BatchLength = 25  # 32 images are in a minibatch
 Size = [2000, 1]
-NumIteration = 500
+NumIteration = 5000
 LearningRate = 1e-4 # learning rate of the algorithm
 NumClasses = 2 # number of output classes
 NumSupportsPerClass = 2
 EvalFreq = 50 # evaluate on every 1000th iteration
+Dropout = 0.5
 
 
 # create tensorflow graph
@@ -34,7 +35,7 @@ InputData = tf.placeholder(tf.float32, [None, Size[0], Size[1]]) # network input
 SupportData = tf.placeholder(tf.float32, [None, NumSupportsPerClass, NumClasses, Size[0], Size[1]])
 InputLabels = tf.placeholder(tf.int32, [None]) # desired network output
 OneHotLabels = tf.one_hot(InputLabels, NumClasses)
-#KeepProb = tf.placeholder(tf.float32) # dropout (keep probability -currently not used)
+KeepProb = tf.placeholder(tf.float32) # dropout (keep probability -currently not used)
 
 # Load in EEG data
 directory = './BeachStormData/'
@@ -110,7 +111,7 @@ def make_support_set(Data, Labels):
 	return QueryData, SupportDataList, Label
 
 NumKernels = [32, 32, 32]
-def MakeConvNet(Input, Size, First = False):
+def MakeConvNet(Input, Size, Keep, First = False):
 	CurrentInput = Input
 	CurrentInput = (CurrentInput / 255.0) - 0.5
 	CurrentFilters = Size[-1] # the input dim at the first layer is 1, since the input image is grayscale
@@ -139,20 +140,21 @@ def MakeConvNet(Input, Size, First = False):
 			# this should be 1, 1, 1, 1 for both if the network is CNN friendly
 			CurrentInput = tf.nn.max_pool(ReLU, ksize = [1, 1, 5, 1], strides = [1, 1, 1, 1], padding = 'VALID') 
 			CurrentInput = tf.squeeze(CurrentInput, squeeze_dims=1)
+			CurrentInput = tf.nn.dropout(CurrentInput, Keep)
 
 
 	return CurrentInput
 
 with tf.name_scope('network'):
 
-	encodedQuery = MakeConvNet(InputData, Size, First = True)
+	encodedQuery = MakeConvNet(InputData, Size, KeepProb, First = True)
 	print('eq', encodedQuery.shape)
 	SupportList = []
 	QueryList = []
 
 	for i in range(NumClasses):
 		for k in range(NumSupportsPerClass):
-			SupportList.append(MakeConvNet(SupportData[:, k, i, :, :], Size))
+			SupportList.append(MakeConvNet(SupportData[:, k, i, :, :], Size, KeepProb))
 			QueryList.append(encodedQuery)
 
 	QueryRepeat = tf.stack(QueryList)
@@ -222,12 +224,12 @@ with tf.Session(config = conf) as Sess:
 
 			# execute the session
 			Summary, _, Acc, L, p, c, pbs = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, Pred, Correct, probs],
-				feed_dict = {InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
+				feed_dict = {InputData: QueryData, InputLabels: Label, SupportData: SupportDataList, KeepProb: Dropout})
 			#print(pbs[0:10])
-			print(p[0:15])
-			print(c[0:15])
+			#print(p[0:15])
+			#print(c[0:15])
 
-			if (Step % 1 == 0):
+			if (Step % 10 == 0):
 				print("Iteration: " + str(Step))
 				print("Accuracy: " + str(Acc))
 				print("Loss: " + str(L))
@@ -239,7 +241,7 @@ with tf.Session(config = conf) as Sess:
 				for i in range(BatchLength):
 					TestDat, SuppData, TestLab = make_support_set(TestData, TestLabels)
 
-					Acc = Sess.run(Accuracy, feed_dict = {InputData: TestDat, InputLabels: TestLab, SupportData: SuppData})
+					Acc = Sess.run(Accuracy, feed_dict = {InputData: TestDat, InputLabels: TestLab, SupportData: SuppData, KeepProb: 1.0})
 					TotalAcc += Acc
 					count += 1
 				TotalAcc = TotalAcc / count
