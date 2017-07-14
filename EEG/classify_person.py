@@ -50,7 +50,7 @@ Data = np.zeros([NumClasses, NumElementsPerClass, Size[0]])
 Labels = np.zeros([NumClasses, NumElementsPerClass])
 for k in range(NumClasses):
 	print(k)
-	k_inds = np.argwhere(labels_in==k)[0]
+	k_inds = np.argwhere(labels_in==k)[:,0]
 	Data[k] = data_in[k_inds]
 	Labels[k] = labels_in[k_inds]
 TrainData = Data[:,0:TrainSize]
