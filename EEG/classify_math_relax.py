@@ -97,7 +97,7 @@ def make_support_set(Data, Labels):
 		SupportDataList.append([])
 
 		for j in range(NumClasses):
-			if False and (j == QueryClass):
+			if (j == QueryClass):
 				SupportDataList[i].append(np.squeeze(Data[QueryIndices[1 : 1 + NumSupportsPerClass]], axis=1))
 			else:
 				SupportIndices = np.argwhere(Labels == j)
