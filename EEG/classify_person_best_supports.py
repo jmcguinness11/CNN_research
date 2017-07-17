@@ -22,7 +22,7 @@ flags.DEFINE_string('summary_dir', '/tmp/EEG/{}'.format(dt), 'Summaries director
 # parameters
 BatchLength = 25  # 32 images are in a minibatch
 Size = [2500, 1]
-NumIteration = 100
+NumIteration = 1000
 LearningRate = 1e-4 # learning rate of the algorithm
 NumClasses = 2 # number of output classes
 NumSupportsPerClass = 2
@@ -45,8 +45,8 @@ labels_in = np.load('{}split_person_labels.npy'.format(directory))
 
 # restructure data to have a train and a test set
 NumElementsPerClass = data_in.shape[0] / NumClasses
-TrainSize = 10
-ValidationSize = 5
+TrainSize = 15
+ValidationSize = 4
 TestSize = NumElementsPerClass - TrainSize - ValidationSize
 Data = np.zeros([NumClasses, NumElementsPerClass, Size[0]])
 Labels = np.zeros([NumClasses, NumElementsPerClass])
@@ -307,7 +307,7 @@ with tf.Session(config = conf) as Sess:
 	MaxIndex = 0
 	for i in range(len(AllCombos)):
 		SuppData = support_index_to_data(TrainData, AllCombos[i])
-		Acc = Sess.run([Accuracy], feed_dict = {InputData: ValidationData, InputLabels: ValidationLabels, SupportData: SuppData})
+		Acc = Sess.run(Accuracy, feed_dict = {InputData: ValidationData, InputLabels: ValidationLabels, SupportData: SuppData})
 		if (Acc > MaxAcc):
 			MaxAcc = Acc
 			MaxIndex = i
@@ -332,7 +332,6 @@ with tf.Session(config = conf) as Sess:
 		Acc = Sess.run(Accuracy, feed_dict = {InputData: TestDataSlice, InputLabels: TestLabelSlice, SupportData: SuppData})
 		ct = ct + 1
 		accuracy += Acc
-		print(Acc)
 	
 	accuracy /= ct
 	print("Independent Test Accuracy (best supports):", accuracy)
