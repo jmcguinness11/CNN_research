@@ -22,7 +22,7 @@ flags.DEFINE_string('summary_dir', '/tmp/EEG/{}'.format(dt), 'Summaries director
 # parameters
 BatchLength = 25  # 32 images are in a minibatch
 Size = [2500, 1]
-NumIteration = 500
+NumIteration = 5000
 LearningRate = 1e-4 # learning rate of the algorithm
 NumClasses = 2 # number of output classes
 NumSupportsPerClass = 2
@@ -225,10 +225,10 @@ with tf.Session(config = conf) as Sess:
 			Summary, _, Acc, L, p, c, pbs = Sess.run([SummaryOp, Optimizer, Accuracy, Loss, Pred, Correct, probs],
 				feed_dict = {InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
 			#print(pbs[0:10])
-			print(p[0:15])
-			print(c[0:15])
+			#print(p[0:15])
+			#print(c[0:15])
 
-			if (Step % 1 == 0):
+			if (Step % 10 == 0):
 				print("Iteration: " + str(Step))
 				print("Accuracy: " + str(Acc))
 				print("Loss: " + str(L))
