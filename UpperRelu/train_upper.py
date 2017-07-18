@@ -46,16 +46,15 @@ KeepProb = tf.placeholder(tf.float32) #dropout (keep probability)
 
 
 def AddReLu(Input):
-	
+	'''
 	alpha = .01
 	ReLU = tf.maximum(Input, alpha * Input)	
-	
 	'''
+
 	alpha=0.01
 	ReLU=tf.maximum(-1+alpha*(Input+1),Input)
 	alpha=-0.01
 	ReLU=tf.minimum((1+alpha*(ReLU-1)),ReLU)
-	'''
 	
 	#ReLU = tf.nn.elu(Input)
 
@@ -199,8 +198,8 @@ with tf.Session(config=conf) as Sess:
 		if not Step % SaveFreq:
 			TrainAccArr = np.asarray(TrainAccList)
 			TestAccArr = np.asarray(TestAccList)
-			np.savetxt('train_acc.dat',TrainAccArr)
-			np.savetxt('test_acc.dat',TestAccArr)
+			np.savetxt('train_acc_upper.dat',TrainAccArr)
+			np.savetxt('test_acc_upper.dat',TestAccArr)
 
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))

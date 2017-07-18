@@ -23,11 +23,11 @@ flags.DEFINE_string('summary_dir', '/tmp/relutest/{}'.format(dt), 'Summaries dir
 BatchLength=32	#32 images are in a minibatch
 #Size=[28, 28, 1] #Input img will be resized to this size
 Size=[32, 32, 3] #Input img will be resized to this size
-NumIteration=200000
+NumIteration=500000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 Dropout=0.5 #droupout parameters in the FNN layer - currently not used
-EvalFreq=1000 #evaluate on every 100th iteration
+EvalFreq=10000 #evaluate on every 100th iteration
 
 #load data
 directory = '../CIFAR_data/'
@@ -59,7 +59,7 @@ NumKernels = [32,32,32]
 def MakeConvNet(Input,Size):
 	CurrentInput = Input
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
-	for i in range(3): #number of layers
+	for i in range(len(NumKernels)): #number of layers
 		with tf.variable_scope('conv'+str(i)):
 			NumKernel=NumKernels[i]
 			W = tf.get_variable('W',[3,3,CurrentFilters,NumKernel])
@@ -77,7 +77,7 @@ def MakeConvNet(Input,Size):
 			#ReLU = tf.nn.relu(ConvResult)
 			ReLU = AddReLu(ConvResult)
 			#leaky ReLU
-			
+
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID')
 					
 	#add fully connected network
@@ -142,7 +142,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.89 #fraction of GPU used
 
 with tf.Session(config=conf) as Sess:
 	Sess.run(Init)
