@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
+import sys
 import cv2
 
 #set summary dir for tensorflow with FLAGS
@@ -19,15 +20,25 @@ flags.DEFINE_string('summary_dir', '/tmp/relutest/{}'.format(dt), 'Summaries dir
 #	 tf.gfile.MakeDirs(FLAGS.summary_dir)
 
 
+#Check Input Arguments
+if len(sys.argv) != 2:
+	print('Error: second argument not provided', file=sys.stderr)
+	exit(1)
+RunNumber = int(sys.argv[1])
+if RunNumber < 0:
+	print('Error: negative run number not allowed', file=sys.stderr)
+	exit(1)
+
 #Parameters
 BatchLength=32	#32 images are in a minibatch
-#Size=[28, 28, 1] #Input img will be resized to this size
-Size=[32, 32, 3] #Input img will be resized to this size
-NumIteration=500000
+Size=[28, 28, 1] #Input img will be resized to this size
+#Size=[32, 32, 3] #Input img will be resized to this size
+NumIteration=30000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
-Dropout=0.5 #droupout parameters in the FNN layer - currently not used
-EvalFreq=10000 #evaluate on every 100th iteration
+Dropout=1.0 #droupout parameters in the FNN layer - currently not used
+EvalFreq=1000 #evaluate on every 100th iteration
+SaveFreq = 10000
 
 #load data
 directory = '../CIFAR_data/'
@@ -45,14 +56,19 @@ KeepProb = tf.placeholder(tf.float32) #dropout (keep probability)
 
 
 def AddReLu(Input):
+	
 	alpha = .01
 	ReLU = tf.maximum(Input, alpha * Input)	
+	
 	'''
 	alpha=0.01
 	ReLU=tf.maximum(-1+alpha*(Input+1),Input)
 	alpha=-0.01
 	ReLU=tf.minimum((1+alpha*(ReLU-1)),ReLU)
 	'''
+	
+	#ReLU = tf.nn.elu(Input)
+
 	return ReLU
 
 NumKernels = [32,32,32]
@@ -77,7 +93,7 @@ def MakeConvNet(Input,Size):
 			#ReLU = tf.nn.relu(ConvResult)
 			ReLU = AddReLu(ConvResult)
 			#leaky ReLU
-
+			
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID')
 					
 	#add fully connected network
@@ -136,14 +152,16 @@ tf.summary.scalar("loss", Loss)
 tf.summary.scalar("accuracy", Accuracy)
 
 
+#Create lists in which to save data
+TrainAccList = []
+TestAccList = []
 
 SummaryOp = tf.summary.merge_all()
 
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.89 #fraction of GPU used
-
+conf.gpu_options.per_process_gpu_memory_fraction = 0.9 #fraction of GPU used
 with tf.Session(config=conf) as Sess:
 	Sess.run(Init)
 	SummaryWriter = tf.summary.FileWriter(FLAGS.summary_dir,tf.get_default_graph())
@@ -162,10 +180,11 @@ with tf.Session(config=conf) as Sess:
 		Summary,_,Acc,L,P = Sess.run([SummaryOp,Optimizer, Accuracy, Loss,PredWeights], feed_dict={InputData: Data, InputLabels: Label, KeepProb:Dropout})
 
 		#print loss and accuracy at every 10th iteration
-		if (Step%100)==0:
+		if (Step%10)==0:
 			#train accuracy
 			print("Iteration: "+str(Step))
 			print("Accuracy:" + str(Acc))
+			TrainAccList.append([Step,Acc])
 			print("Loss:" + str(L))
 
 		#independent test accuracy
@@ -179,14 +198,26 @@ with tf.Session(config=conf) as Sess:
 				#print(response)
 				if np.argmax(response)==Label:
 					TotalAcc+=1
-			print("Independent Test set: "+str(float(TotalAcc)/TestData.shape[0]))
+			TestAcc = float(TotalAcc)/TestData.shape[0]
+			print("Independent Test set: "+str(TestAcc))
+			TestAccList.append([Step, TestAcc])
 		
 		#print("Loss:" + str(L))
 		SummaryWriter.add_summary(Summary,Step)
 		Step+=1
 
+		if not Step % SaveFreq:
+			TrainAccArr = np.asarray(TrainAccList)
+			TestAccArr = np.asarray(TestAccList)
+			np.savetxt('results/train_acc_cifar{}.dat'.format(RunNumber), TrainAccArr)
+			np.savetxt('results/test_acc_cifar{}.dat'.format(RunNumber), TestAccArr)
+
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))
+	TrainAccArr = np.asarray(TrainAccList)
+	TestAccArr = np.asarray(TestAccList)
+	np.savetxt('results/train_acc_cifar{}.dat'.format(RunNumber), TrainAccArr)
+	np.savetxt('results/test_acc_cifar{}.dat'.format(RunNumber), TestAccArr)
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)

@@ -5,6 +5,7 @@ import tensorflow as tf
 import numpy as np
 import datetime
 import random
+import sys
 import cv2
 
 #set summary dir for tensorflow with FLAGS
@@ -19,11 +20,20 @@ flags.DEFINE_string('summary_dir', '/tmp/relutest/{}'.format(dt), 'Summaries dir
 #	 tf.gfile.MakeDirs(FLAGS.summary_dir)
 
 
+#Check Input Arguments
+if len(sys.argv) != 2:
+	print('Error: second argument not provided', file=sys.stderr)
+	exit(1)
+RunNumber = int(sys.argv[1])
+if RunNumber < 0:
+	print('Error: negative run number not allowed', file=sys.stderr)
+	exit(1)
+
 #Parameters
 BatchLength=32	#32 images are in a minibatch
 Size=[28, 28, 1] #Input img will be resized to this size
 #Size=[32, 32, 3] #Input img will be resized to this size
-NumIteration=200000
+NumIteration=30000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 Dropout=1.0 #droupout parameters in the FNN layer - currently not used
@@ -199,11 +209,15 @@ with tf.Session(config=conf) as Sess:
 		if not Step % SaveFreq:
 			TrainAccArr = np.asarray(TrainAccList)
 			TestAccArr = np.asarray(TestAccList)
-			np.savetxt('train_acc.dat',TrainAccArr)
-			np.savetxt('test_acc.dat',TestAccArr)
+			np.savetxt('results/train_acc{}.dat'.format(RunNumber), TrainAccArr)
+			np.savetxt('results/test_acc{}.dat'.format(RunNumber), TestAccArr)
 
 	print('Saving model...')
 	print(Saver.save(Sess, "./saved/"))
+	TrainAccArr = np.asarray(TrainAccList)
+	TestAccArr = np.asarray(TestAccList)
+	np.savetxt('results/train_acc{}.dat'.format(RunNumber), TrainAccArr)
+	np.savetxt('results/test_acc{}.dat'.format(RunNumber), TestAccArr)
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
