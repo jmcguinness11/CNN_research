@@ -211,8 +211,7 @@ with tf.Session(config=conf) as Sess:
 			np.savetxt('results/train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
 			np.savetxt('results/test_acc_upper{}.dat'.format(RunNumber), TestAccArr)
 
-	print('Saving model...')
-	print(Saver.save(Sess, "./saved/"))
+	print('Saving results...')
 	TrainAccArr = np.asarray(TrainAccList)
 	TestAccArr = np.asarray(TestAccList)
 	np.savetxt('results/train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
