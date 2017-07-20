@@ -210,14 +210,14 @@ with tf.Session(config=conf) as Sess:
 		if not Step % SaveFreq:
 			TrainAccArr = np.asarray(TrainAccList)
 			TestAccArr = np.asarray(TestAccList)
-			np.savetxt('results/train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
-			np.savetxt('results/test_acc_upper{}.dat'.format(RunNumber), TestAccArr)
+			np.savetxt('results/prenorm_train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
+			np.savetxt('results/prenorm_test_acc_upper{}.dat'.format(RunNumber), TestAccArr)
 
 	print('Saving results...')
 	TrainAccArr = np.asarray(TrainAccList)
 	TestAccArr = np.asarray(TestAccList)
-	np.savetxt('results/prenorm_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
-	np.savetxt('results/prenorm_acc_upper{}.dat'.format(RunNumber), TestAccArr)
+	np.savetxt('results/prenorm_train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
+	np.savetxt('results/prenorm_train_acc_upper{}.dat'.format(RunNumber), TestAccArr)
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)

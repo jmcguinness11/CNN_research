@@ -209,8 +209,8 @@ with tf.Session(config=conf) as Sess:
 		if not Step % SaveFreq:
 			TrainAccArr = np.asarray(TrainAccList)
 			TestAccArr = np.asarray(TestAccList)
-			np.savetxt('results/train_acc{}.dat'.format(RunNumber), TrainAccArr)
-			np.savetxt('results/test_acc{}.dat'.format(RunNumber), TestAccArr)
+			np.savetxt('results/prenorm_train_acc{}.dat'.format(RunNumber), TrainAccArr)
+			np.savetxt('results/prenorm_test_acc{}.dat'.format(RunNumber), TestAccArr)
 
 	print('Saving results...')
 	TrainAccArr = np.asarray(TrainAccList)
