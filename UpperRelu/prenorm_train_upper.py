@@ -217,7 +217,7 @@ with tf.Session(config=conf) as Sess:
 	TrainAccArr = np.asarray(TrainAccList)
 	TestAccArr = np.asarray(TestAccList)
 	np.savetxt('results/prenorm_train_acc_upper{}.dat'.format(RunNumber), TrainAccArr)
-	np.savetxt('results/prenorm_train_acc_upper{}.dat'.format(RunNumber), TestAccArr)
+	np.savetxt('results/prenorm_test_acc_upper{}.dat'.format(RunNumber), TestAccArr)
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
