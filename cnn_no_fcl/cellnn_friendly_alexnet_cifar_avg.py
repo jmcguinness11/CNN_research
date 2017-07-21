@@ -24,11 +24,11 @@ flags.DEFINE_string('summary_dir', '/tmp/alexnet/cnn_no_fcl/avg/{}/{}'.format(da
 BatchLength = 32  # 32 images are in a minibatch
 Size = [32, 32, 3]  # Input img will be resized to this size
 #Size = [28, 28, 1]
-NumIteration = 100000
+NumIteration = 500000
 LearningRate = 1e-4  # learning rate of the algorithm
 NumClasses = 10  # number of output classes
 Dropout = 0.5  # droupout parameters in the FNN layer - currently not used
-EvalFreq = 100	# evaluate on every 100th iteration
+EvalFreq = 500	# evaluate on every 100th iteration
 SaveFreq = 10000
 
 
@@ -218,7 +218,7 @@ TestAccResults = []
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.22  # fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.92  # fraction of GPU used
 
 with tf.device('/gpu:0'):
 	with tf.Session(config=conf) as Sess:
@@ -282,16 +282,16 @@ with tf.device('/gpu:0'):
 				TestAccResults.append([Step,TestAcc])
 
 			if not Step % SaveFreq:
-				TestAccResults = np.asarray(TestAccResults)
-				np.savetxt('results/cenn_friendly_avgpool_cifar{}'.format(run_number))
+				TestAccOut = np.asarray(TestAccResults)
+				np.savetxt('results/cenn_friendly_avgpool_cifar{}'.format(run_number), TestAccOut)
 				
 		
 			SummaryWriter.add_summary(Summary,Step)
 			Step+=1
 
 		print('Saving results...')
-		TestAccResults = np.asarray(TestAccResults)
-		np.savetxt('results/cenn_friendly_avgpool_cifar{}'.format(run_number))
+		TestAccOut = np.asarray(TestAccResults)
+		np.savetxt('results/cenn_friendly_avgpool_cifar{}'.format(run_number), TestAccOut)
 
 	print("Optimization Finished!")
 	print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
