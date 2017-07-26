@@ -176,7 +176,7 @@ with tf.Session(config=conf) as Sess:
 		
 		if not Step % SaveFreq:
 			print('Saving model...')
-			print(Saver.save(Sess, "./saved/euclidean/model"))
+			print(Saver.save(Sess, "./saved/simple_cenn/model"))
 		
 		
 		#independent test accuracy

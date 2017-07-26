@@ -41,11 +41,11 @@ InputLabels = tf.placeholder(tf.int32, [BatchLength]) #desired network output
 OneHotLabels = tf.one_hot(InputLabels,NumClasses)
 KeepProb = tf.placeholder(tf.float32) #dropout (keep probability -currently not used)
 
-NumKernels = [32,32,10]
+NumKernels = [128,128,64,10]
 def MakeConvNet(Input,Size):
 	CurrentInput = Input
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
-	for i in range(5): #number of layers
+	for i in range(len(NumKernels)): #number of layers
 		with tf.variable_scope('conv'+str(i)):
 			NumKernel=NumKernels[i]
 			# W = tf.get_variable('W',[3,3,CurrentFilters,NumKernel])
@@ -145,7 +145,7 @@ SummaryOp = tf.summary.merge_all()
 
 # Launch the session with default graph
 conf = tf.ConfigProto(allow_soft_placement=True)
-conf.gpu_options.per_process_gpu_memory_fraction = 0.2 #fraction of GPU used
+conf.gpu_options.per_process_gpu_memory_fraction = 0.92 #fraction of GPU used
 
 # Launch the session with default graph
 with tf.Session(config=conf) as Sess:
@@ -184,11 +184,12 @@ with tf.Session(config=conf) as Sess:
 			print("Loss: " + str(L))
 			print("Accuracy: " + str(A))
 		
-		
+		'''
 		if not Step % SaveFreq:
 			print('Saving model...')
 			print(Saver.save(Sess, "./saved/euclidean/model"))
-		
+		'''
+
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
 			TotalAcc=0;
