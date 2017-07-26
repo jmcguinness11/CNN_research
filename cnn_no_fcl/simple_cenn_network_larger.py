@@ -21,7 +21,7 @@ if tf.gfile.Exists(FLAGS.summary_dir):
 #Parameters
 BatchLength=25 #25 images are in a minibatch
 Size=[28, 28, 1] #Input img will be resized to this size
-NumIteration=250000;
+NumIteration=250000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 10 #number of output classes
 EvalFreq=500 #evaluate on every EvalFreq iterations
@@ -167,28 +167,17 @@ with tf.Session(config=conf) as Sess:
 		#execute the session
 		Summary,_,L,A,P, labels, CP, om = Sess.run([SummaryOp,Optimizer,  Loss,Accuracy,Pred, InputLabels, CorrectPredictions, OutMaps], feed_dict={InputData: Data, InputLabels: Label})
 
-		'''
-		print('')
-		print('Correct:\t', CP[0:5])
-		print('Preds:\t', P[0:5])
-		print('Labels:\t', labels[0:5])
-		print('')
-		#train accuracy
-		#print("Iteration: "+str(Step))
-		#print("Loss:" + str(L))
-		#print("Accuracy:" + str(A))
-		#print("Pred:" + str(P))
-		'''
+
 		if not Step % 50:
 			print("Iteration: " + str(Step))
 			print("Loss: " + str(L))
 			print("Accuracy: " + str(A))
 		
-		'''
+		
 		if not Step % SaveFreq:
 			print('Saving model...')
 			print(Saver.save(Sess, "./saved/euclidean/model"))
-		'''
+		
 		
 		#independent test accuracy
 		if (Step%EvalFreq)==0:			
@@ -211,7 +200,7 @@ with tf.Session(config=conf) as Sess:
 		Step+=1
 
 	print('Saving model...')
-	print(Saver.save(Sess, "./saved/euclidean/model"))
+	print(Saver.save(Sess, "./saved/simple_cenn/model"))
 
 print("Optimization Finished!")
 print("Execute tensorboard: tensorboard --logdir="+FLAGS.summary_dir)
