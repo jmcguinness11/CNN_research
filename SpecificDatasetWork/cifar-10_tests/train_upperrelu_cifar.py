@@ -61,10 +61,10 @@ def MakeConvNet(Input,Size):
 			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
 			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
 	
-			#ReLU = tf.nn.relu(ConvResult)
-			#leaky ReLU
+			#upper ReLU
 			alpha=0.01
 			ReLU=tf.maximum(alpha*ConvResult,ConvResult)
+			alpha=-0.01
 			ReLU=tf.minimum((1+alpha*(ReLU-1)),ReLU)
 
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,2,2,1],strides=[1,2,2,1],padding='VALID')
