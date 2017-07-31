@@ -30,7 +30,7 @@ PrintFreq = 1
 EvalFreq = 1000 # evaluate on every 100th iteration
 
 # load data
-directory = '../../../MNIST_data/'
+directory = '../../../../MNIST_data/'
 TrainData = np.load('{}full_train_images.npy'.format(directory))
 TrainLabels = np.load('{}full_train_labels.npy'.format(directory))
 TestData = np.load('{}full_test_images.npy'.format(directory))
