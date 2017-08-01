@@ -41,7 +41,7 @@ InputLabels = tf.placeholder(tf.int32, [BatchLength]) #desired network output
 OneHotLabels = tf.one_hot(InputLabels,NumClasses)
 KeepProb = tf.placeholder(tf.float32) #dropout (keep probability -currently not used)
 
-NumKernels = [128,128,64,10]
+NumKernels = [32,32,32,32,10]
 def MakeConvNet(Input,Size):
 	CurrentInput = Input
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
