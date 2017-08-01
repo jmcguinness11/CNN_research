@@ -22,7 +22,7 @@ achieved 100% classification accuracy.  Though we later found this was incorrect
 two datasets, instead of taking data from different people, we recorded one person 
 relaxing vs. doing math ([MathRelaxData](./MathRelaxData)) as well as staring at 
 photos of violent storms and idyllic beach scenes 
-([BeachStormData](./BeachStormData).
+([BeachStormData](./BeachStormData)).
 
 ## Our Network
 To attempt to classify the MindWave data, I modified our One-Shot network (see 
