@@ -35,11 +35,12 @@ TrainSize = 10
 TestSize = 10
 EvalFreq = 200 # evaluate on every 1000th iteration
 
-# load data
-TrainData = np.load('/Users/Sophie/Desktop/Google Drive/Budapest/Code/python-mnist/full_train_images.npy')
-TrainLabels = np.load('/Users/Sophie/Desktop/Google Drive/Budapest/Code/python-mnist/full_train_labels.npy')
-TestData = np.load('/Users/Sophie/Desktop/Google Drive/Budapest/Code/python-mnist/full_test_images.npy')
-TestLabels = np.load('/Users/Sophie/Desktop/Google Drive/Budapest/Code/python-mnist/full_test_labels.npy')
+# Read in MNIST data
+directory = '../MNIST_data/'
+TrainData= np.load('{}full_train_images.npy'.format(directory))
+TrainLabels=np.load('{}full_train_labels.npy'.format(directory))
+TestData= np.load('{}full_test_images.npy'.format(directory))
+TestLabels=np.load('{}full_test_labels.npy'.format(directory))
 
 #randomize order
 permutation = np.random.permutation(TrainData.shape[0])

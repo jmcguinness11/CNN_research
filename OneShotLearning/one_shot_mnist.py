@@ -81,6 +81,8 @@ def make_support_set(Data, Labels):
 
 		QueryClass = np.random.randint(NumClasses)
 		QueryIndices = np.argwhere(Labels == QueryClass)
+		permutation = np.random.permutation(QueryIndices.shape[0])
+		QueryIndices = QueryIndices[permutation]
 		QueryIndex = QueryIndices[0]
 
 		QueryDataList.append(Data[QueryIndex])
