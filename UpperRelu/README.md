@@ -13,4 +13,4 @@ DESCRIPTION OF THE PROCESS THAT LED ME TO UPPER RELU.
 Initial Findings
 ----------------
 After I figured out its potential, I ran some quick initial tests on Upper ReLU.
-Those results are stored in the *InitialFindings* folder. 
+Those results are stored in the [InitialFindings](./InitialFindings) folder. 

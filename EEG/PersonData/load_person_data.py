@@ -42,12 +42,10 @@ for i in range(NumFiles):
 		splitData[i, j, :] = data[idx + buff_size : idx + stride - buff_size]
 		idx += stride
 		splitLabels[i, j] = i%NumClasses
-
 splitData = np.reshape(splitData, [NumFiles * NumSamples, sample_size])
 splitLabels = np.reshape(splitLabels, [NumFiles * NumSamples])
 
 print(splitData.shape)
 print(splitLabels)
-
 np.save('split_person_data_4', splitData)
 np.save('split_person_labels_4', splitLabels)
