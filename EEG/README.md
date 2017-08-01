@@ -1,5 +1,5 @@
 ## The MindWave EEG
-<img src="./mindwave.jpg" alt="Image of MindWave" width="50"/>
+<img src="./mindwave.jpg" alt="Image of MindWave" width="200"/>
 The MindWave EEG is a lightweight and inexpensive brainwave reader produced by the
 company <a href="http://neurosky.com">NeuroSky</a>.  We were able to read in data 
 in csv format from the MindWave using an Android application and used python scripts
