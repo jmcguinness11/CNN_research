@@ -1,5 +1,5 @@
 ## Our Goal
-When we first obtained a **MindWave** EEG, our initial goal was to see if we could
+When we first obtained a MindWave EEG, our initial goal was to see if we could
 use any type of neural network to classify some sort of dataset that we would record
 from the EEG.  We were working on One-Shot learning when we started this project, so
 we decided to also use the One-Shot framework with the EEG data.
@@ -46,13 +46,15 @@ person subset of this dataset, the network can guess correctly about 75% of the 
 accuracy (vs. 25% chance).
 
 ## Future Work
-Though even the performance of our network on the easier **Person** dataset was admittedly not great, it is somewhat impressive that the network is able to distinguish between people just by processing the extremely noisy one-dimensional data we took 
-from the inexpensive MindWave.  We believe that with a higher-precision EEG and a 
-more tightly controlled environment, better results are possible.  It could anso be
-the case that a different network structure could be used to better classify the 
-data.  We did additionally consider preprocessing our data with a fast-fourier 
-transform (FFT) to see if that could help with classifiation, but we had to move on
-to other research areas.  
+Though even the performance of our network on the easier **Person** dataset was 
+admittedly not great, it is somewhat impressive that the network is able to 
+distinguish between people just by processing the extremely noisy one-dimensional 
+data we took from the inexpensive MindWave.  We believe that with a higher-precision 
+EEG and a more tightly controlled environment, better results are possible.  It 
+could also be the case that a different network structure could be used to better 
+classify the data.  We did additionally consider preprocessing our data with a 
+fast-fourier transform (FFT) to see if that could help with classifiation, but we had
+to move on to other research areas.  
 
 There are many potential applications for the use of neural networks on brainwave 
 data (e.g. personal authentication and helping the paralyzed), making this quite an 
