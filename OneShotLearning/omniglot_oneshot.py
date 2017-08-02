@@ -174,9 +174,8 @@ def make_support_set(Data, Labels):
 
 	
 	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
-	#this reshape is not good, swap the dimesnions instead of this!!!
-        SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
-        SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
+	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
+	SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
 	Label = np.reshape(QueryLabelList, [BatchLength])
 	return QueryData, SupportDataList, Label
 
@@ -186,7 +185,7 @@ def make_support_set(Data, Labels):
 NumKernels = [32,32,32]
 def MakeConvNet(Input,Size, First=False):
 	CurrentInput = Input
-        CurrentInput=(CurrentInput/255.0)-0.5
+	CurrentInput=(CurrentInput/255.0)-0.5
 	CurrentFilters = Size[2] #the input dim at the first layer is 1, since the input image is grayscale
 	for i in range(len(NumKernels)): #number of layers
 		with tf.variable_scope('conv'+str(i)) as varscope:
@@ -200,17 +199,9 @@ def MakeConvNet(Input,Size, First=False):
 			ConvResult = tf.nn.conv2d(CurrentInput,W,strides=[1,1,1,1],padding='VALID') #VALID, SAME
 			ConvResult= tf.add(ConvResult, Bias)
 			
-			#add batch normalization
-			#beta = tf.get_variable('beta',[NumKernel],initializer=tf.constant_initializer(0.0))
-			#gamma = tf.get_variable('gamma',[NumKernel],initializer=tf.constant_initializer(1.0))
-			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
-			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
-	
-			#ReLU = tf.nn.relu(ConvResult)
 			#leaky ReLU
 			alpha=0.01
 			ReLU=tf.maximum(alpha*ConvResult,ConvResult)	
-			#ReLU=tf.minimum((1+alpha*(ReLU-1)),ReLU)
 
 			CurrentInput = tf.nn.max_pool(ReLU,ksize=[1,3,3,1],strides=[1,1,1,1],padding='VALID')
 			
@@ -241,11 +232,11 @@ with tf.name_scope('network'):
 
 # Define loss and optimizer
 with tf.name_scope('loss'):
-        
+		
 	#first calculate cosine similarity 
 	#between EncodedQuery and everything in Supports
 	#(A*B)/(|A||B|)
-        # A * B
+		# A * B
 	DotProduct = tf.reduce_sum(tf.multiply(QueryRepeated, Supports), [2,3,4])
 	# |A|
 	#MagQuery = tf.sqrt(tf.reduce_sum(tf.square(QueryRepeated), [2,3,4]))
@@ -254,7 +245,7 @@ with tf.name_scope('loss'):
 	# result
 	CosSim = DotProduct / tf.clip_by_value(  MagSupport ,1e-10,float("inf"))
 
-        #reshape to condense supports from the same class to one thing
+	#reshape to condense supports from the same class to one thing
 	CosSim = tf.reshape(CosSim, [ NumClasses, NumSupportsPerClass, -1])
 	CosSim = tf.transpose(tf.reduce_mean(CosSim, 1))
 
@@ -262,12 +253,7 @@ with tf.name_scope('loss'):
 	Probabilities = tf.nn.softmax(CosSim)
 
 	
-	#TODO  THIS MIGHT NOT WORK
-	#TODO
 	Loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(OneHotLabels,Probabilities))
-	#TODO
-	#TODO
-
 
 
 with tf.name_scope('optimizer'):	
@@ -326,8 +312,8 @@ with tf.Session(config=conf) as Sess:
 
 		Summary,_,Acc,L, p, c,s = Sess.run([SummaryOp,Optimizer, Accuracy, Loss, Pred, Correct,CosSim],
 							feed_dict={InputData: QueryData, InputLabels: Label, SupportData: SupportDataList})
-                #print(s)
-                #print(c)
+				#print(s)
+				#print(c)
 		#print(p[0:5])
 		#print(c[0:5])
 

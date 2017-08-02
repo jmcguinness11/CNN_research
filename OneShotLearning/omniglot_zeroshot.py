@@ -25,7 +25,7 @@ flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries dir
 BatchLength=25	#32 images are in a minibatch
 #Size=[105, 105, 1] #Input img will be resized to this size
 Size=[28,28,1]
-NumIteration=200000;
+NumIteration=200000
 LearningRate = 1e-4 #learning rate of the algorithm
 NumClasses = 5 #number of output classes
 NumClassesInSubset = 50
@@ -262,12 +262,7 @@ with tf.name_scope('loss'):
 	Probabilities = tf.nn.softmax(CosSim)
 
 	
-	#TODO  THIS MIGHT NOT WORK
-	#TODO
 	Loss = tf.reduce_mean( tf.losses.softmax_cross_entropy(OneHotLabels,CosSim))
-	#TODO
-	#TODO
-
 
 
 with tf.name_scope('optimizer'):	
