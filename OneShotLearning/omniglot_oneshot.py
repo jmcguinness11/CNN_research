@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import tensorflow as tf
@@ -94,7 +94,7 @@ def get_train_data(datalist, train_size=TestSize, test_size=TestSize, num_classe
 		train_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
 
 
-	train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
+	train_labels = np.asarray([int(idx / train_size) for idx in range(train_size * num_classes)])
 
 	#randomize
 	permutation = np.random.permutation(train_labels.shape[0])
@@ -126,7 +126,7 @@ def get_test_data(datalist, train_size=TrainSize, test_size=TestSize, num_classe
 		img = misc.imread(test_set[k])
 		test_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
 
-	test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
+	test_labels = np.asarray([int(idx / test_size) for idx in range(test_size * num_classes)])
 
 	#randomize
 	permutation = np.random.permutation(test_labels.shape[0])
@@ -174,6 +174,7 @@ def make_support_set(Data, Labels):
 
 	
 	QueryData = np.reshape(QueryDataList, [BatchLength,Size[0], Size[1], Size[2]])
+	SupportDataList = np.asarray(SupportDataList)
 	SupportDataList = np.reshape(SupportDataList, [BatchLength, NumClasses, NumSupportsPerClass, Size[0], Size[1], Size[2]])
 	SupportDataList = np.transpose(SupportDataList, (0, 2, 1, 3, 4, 5))
 	Label = np.reshape(QueryLabelList, [BatchLength])

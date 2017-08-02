@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import tensorflow as tf
@@ -14,7 +14,7 @@ flags = tf.app.flags
 FLAGS = flags.FLAGS
 now = datetime.datetime.now()
 dt = ('%s_%s_%s_%s' % (now.month, now.day, now.hour, now.minute))
-flags.DEFINE_string('summary_dir', '/tmp/tutorial/{}'.format(dt), 'Summaries directory')
+flags.DEFINE_string('summary_dir', '/tmp/oneShot/{}'.format(dt), 'Summaries directory')
 #if summary directory exist, delete the previous summaries
 #if tf.gfile.Exists(FLAGS.summary_dir):
 #	 tf.gfile.DeleteRecursively(FLAGS.summary_dir)
@@ -92,7 +92,7 @@ def get_train_data(datalist, num_classes=NumClasses, Size=[28, 28]):
 		train_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
 
 
-	train_labels = np.asarray([idx / train_size for idx in range(train_size * num_classes)])
+	train_labels = np.asarray([int(idx / train_size) for idx in range(train_size * num_classes)])
 
 	#randomize
 	permutation = np.random.permutation(train_labels.shape[0])
@@ -123,7 +123,7 @@ def get_test_data(datalist, num_classes=NumClasses, Size=[28,28], class_nums=Non
 		img = misc.imread(test_set[k])
 		test_data[k,:,:] = misc.imresize(img, (Size[0], Size[1]))
 
-	test_labels = np.asarray([idx / test_size for idx in range(test_size * num_classes)])
+	test_labels = np.asarray([int(idx / test_size) for idx in range(test_size * num_classes)])
 
 	#randomize
 	permutation = np.random.permutation(test_labels.shape[0])
