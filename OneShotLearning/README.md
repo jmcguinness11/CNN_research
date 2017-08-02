@@ -44,6 +44,7 @@ classes for testing, trying to correctly select from 5 classes at a time.
 
 ## Results
 |Network  |# Classes  |Dataset  |Accuracy     |
+|---------|-----------|---------|-------------|
 |One-Shot-|10---------|MNIST----|about 85-90%-|
 |One-Shot-|5----------|Omniglot-|about 85-100%|
 |Zero-Shot|5----------|Omniglot-|about 55-75%-|
