@@ -1,5 +1,10 @@
 #!/usr/bin/env python2.7
 
+# This program is where we first started working on selecting the best combination of
+# supports using a validation set.  After the network is trained, we then test each
+# possible support set on a validation set, then use the test the best combo on the
+# independent test set.
+
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
