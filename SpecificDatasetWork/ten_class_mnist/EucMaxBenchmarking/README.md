@@ -5,7 +5,7 @@ each output map.
 
 #### Results
 When taking into accound an average network startup time to
-load the tensorflow graph in python of 7.791 seconds,
+load the Tensorflow graph in python of 7.791 seconds,
 the min-max version of the network ran an average of 5.91% faster than the
 regular Euclidean version while only experiencing about .5% of accuracy degradation.
 The min-max version achieved about 97.5% testing accuracy (on MNIST) while the
