@@ -3,14 +3,14 @@ The directory are three main categories of networks: [AlexNet](http://vision.sta
 convolutional neural networks (CNNs) with a fully-connected layer, and CNNs with no
 fully connected layer (FCL).
 
-*** Medium-complexity CNNs (fc\*)
+### Medium-complexity CNNs (fc\*)
 These three networks only differ in the nonlinearity they use. The
 [fc_benchmark_correct](./fc_benchmark_correct.py) network uses
 [leaky ReLU](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)#Leaky_ReLUs),
 the [fc_upperrelu](./fc_upperrelu.py) network uses [Upper ReLU](../../UpperRelu),
 and [fc_elu] uses the [exponential linear unit (ELU)](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)#ELUs).
 
-*** No-FCL CNNs (sim_fc_10\*)
+### No-FCL CNNs (sim_fc_10\*)
 These networks with [no FCL](../../cnn_no_fcl) use various approaches to calculate
 accuracy and loss.  Both [sim_fc_10](./sim_fc_10.py) and 
 [sim_fc_10_bounded](./sim_fc_10_bounded.py) use the 
