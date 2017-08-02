@@ -345,7 +345,7 @@ with tf.Session(config=conf) as Sess:
 						feed_dict = {InputData: TestData, InputLabels: TestLabels, SupportData: SuppData})
 				Acc += acc
 
-			Acc /= k
+			Acc = Acc / (k+1)
 			print("Independent Test set:", Acc, '\n')
 
 		
