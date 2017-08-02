@@ -59,12 +59,6 @@ def MakeConvNet(Input,Size):
 	
 			CurrentFilters = NumKernel
 			ConvResult = tf.nn.conv2d(CurrentInput,W,strides=[1,1,1,1],padding='SAME') #VALID, SAME
-			#ConvResult= tf.add(ConvResult, Bias)
-			#add batch normalization
-			#beta = tf.get_variable('beta',[NumKernel],initializer=tf.constant_initializer(0.0))
-			#gamma = tf.get_variable('gamma',[NumKernel],initializer=tf.constant_initializer(1.0))
-			#Mean,Variance = tf.nn.moments(ConvResult,[0,1,2])
-			#PostNormalized = tf.nn.batch_normalization(ConvResult,Mean,Variance,beta,gamma,1e-10)
 
 			#CeNN Nonlinearity [-1, 1]
 			#leaky ReLU

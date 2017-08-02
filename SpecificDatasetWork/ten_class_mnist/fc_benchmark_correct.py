@@ -78,6 +78,8 @@ def MakeConvNet(Input,Size):
 		Bias = tf.get_variable('Bias',[NumClasses],initializer=tf.constant_initializer(0.1))
 		FC = tf.add(FC, Bias)
 		FC = tf.nn.dropout(FC, KeepProb)
+		
+		#leaky relu
 		alpha=0.01
 		Out=tf.maximum(alpha*FC,FC)
 				

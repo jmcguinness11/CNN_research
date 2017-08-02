@@ -85,11 +85,11 @@ with tf.name_scope('loss'):
 		LabelIndices=tf.expand_dims(tf.expand_dims(OneHotLabels,1),1)  #32
 	
 		#GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )
-		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) )
+		GTMap= tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],1]) ) * 2 - 1
 		print(LabelIndices.shape, OneHotLabels.shape, GTMap.shape)
 
-		#GTMap= (tf.tile(LabelIndices,tf.stack([1,OutShape[1],OutShape[2],OutShape[3]]) )*2)-1
 		GTMap = tf.cast(GTMap,tf.float32)
+		OutMaps = OutMaps - 1
 		DiffMap=tf.square(tf.subtract(GTMap,OutMaps))
 		Loss=tf.reduce_sum(DiffMap)
 		#Loss=tf.reduce_mean(DiffMap)
@@ -102,24 +102,13 @@ with tf.name_scope('optimizer'):
 
 with tf.name_scope('accuracy'):	  
 
-		'''
-		Zeros = tf.zeros(OutShape, tf.float32)
-		#Zeros = tf.ones(OutShape, tf.float32)*-1
-		Ones = tf.ones(OutShape, tf.float32)
-		SquaredDiffZero = tf.square(tf.subtract(OutMaps, Zeros))
-		SquaredDiffOne = tf.square(tf.subtract(OutMaps, Ones))
-		AvgDiffZero = tf.reduce_mean(SquaredDiffZero, [1,2,3])
-		AvgDiffOne = tf.reduce_mean(SquaredDiffOne, [1,2,3])
-		Pred = tf.argmin([AvgDiffZero,AvgDiffOne],0)
-		CorrectPredictions = tf.equal(tf.cast(Pred,tf.int32), InputLabels)
-		Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
-		'''
 
-		Zeros = tf.zeros(OutShape, tf.float32)
+
+		Zeros = tf.ones(OutShape, tf.float32) * -1 #actually -1s
 		Ones = tf.ones(OutShape, tf.float32)
 
-		DiffZeros = tf.reduce_mean(tf.subtract(Zeros, OutMaps), [1,2])
-		DiffOnes = tf.reduce_mean(tf.subtract(Ones, OutMaps), [1,2])
+		DiffZeros = tf.reduce_mean(tf.square(tf.subtract(Zeros, OutMaps)), [1,2])
+		DiffOnes = tf.reduce_mean(tf.square(tf.subtract(Ones, OutMaps)), [1,2])
 
 		DiffList = []
 		for k in range(NumClasses):
@@ -127,13 +116,11 @@ with tf.name_scope('accuracy'):
 			print(x.shape)
 			y = tf.reduce_sum(DiffZeros, 1)
 			print(y.shape)
-			DiffList.append(tf.square(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k]))
+			DiffList.append(tf.reduce_sum(DiffZeros, 1) - DiffZeros[:,k] + DiffOnes[:,k])
 
 
 		Diffs = tf.stack(DiffList)
-		print(Diffs.shape)
 		Pred = tf.argmin(Diffs,0)
-		print(Pred)
 		CorrectPredictions = tf.equal(tf.cast(Pred, tf.int32), InputLabels)
 		Accuracy = tf.reduce_mean(tf.cast(CorrectPredictions,tf.float32))
 

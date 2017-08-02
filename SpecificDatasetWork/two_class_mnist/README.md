@@ -14,4 +14,5 @@ Same as above except it uses Upper ReLU.
 This is a version of the above networks that uses cosine similarity to calculate 
 accuracy and loss.
 * [train_maps_map.py](./train_maps_max.py):
-This network simply uses an average of the maximum and minimum points of each of the output maps to calculate accuracy and loss.
+This network simply uses an average of the maximum and minimum points of each of the 
+output maps to calculate accuracy and loss.
