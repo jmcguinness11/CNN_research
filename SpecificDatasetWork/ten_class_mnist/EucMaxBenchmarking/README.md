@@ -1,4 +1,4 @@
-In these folders, I explore the what happens if instead of using the normal approach
+Here I explore the what happens if instead of using the normal approach
 to [removing the fully connected layer](../../../cnn_no_fcl) from a convolutional
 neural network, I simply take the average of the minimum and maximum point from
 each output map.
