@@ -6,11 +6,7 @@ What is Upper ReLU?
 -----------------------
 Upper ReLU is a nonlinearity that tries to squeeze values between -1 and 1.
 
-\[
-\begin{equation}
-(-\inf, -1): ReLU = -1 + \alpha(x+1)
-\end{equation}
-\]
+[!equation]((-\inf, -1): ReLU = -1 + \alpha(x+1))
 
 How did I find this nonlinearity?
 -------------------------------------
