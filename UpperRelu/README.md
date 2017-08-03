@@ -79,10 +79,11 @@ In all of the following graphs, the network with Upper ReLU is represented in gr
 Training accuracy results are displayed on the right, while independent test
 accuracies are shown on the left.
 
-##### ReLU vs. Upper ReLU - MNIST
-<img src="./relu_vs_upperrelu.png" alt="ReLU vs. Upper ReLU" width="750">
-##### Batch Normalization (normal ReLU) vs. Upper ReLU - CIFAR
-<img src="./bnorm_vs_upperrelu_cifar.png" alt="B-Norm vs. Upper ReLU" width="750">
+#### ReLU vs. Upper ReLU - MNIST
+<img src="./relu_vs_upperrelu.png" alt="ReLU vs. Upper ReLU" width="700">
+
+#### Batch Normalization (normal ReLU) vs. Upper ReLU - CIFAR
+<img src="./bnorm_vs_upperrelu_cifar.png" alt="B-Norm vs. Upper ReLU" width="700">
 
 
 Using the Graphing File:
