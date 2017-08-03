@@ -91,7 +91,20 @@ the data.  This is a strange result because the literature seems to show that ba
 normalization is extremely effective, so we would certainly welcome feedback.
 However, we have thoroughly checked our implementation and can find nothing wrong, so
 we believe that with our CNN, batch normalization helps increase train accuracy while
-badly hurting test accuracy.*
+badly hurting independent test accuracy (a horrible case of overfitting).*
 
 Using the Graphing File:
 ------------------------
+To explore these results for yourself, you can use the 
+[graph_aggregates.py](./graph_aggregates.py) script.  This script depends on
+**matplotlib** and **numpy**, so if you do not have those installed, you will have
+to do so as follows:
+```
+pip install matplotlib
+pip install numpy
+```
+Now that you have the dependencies to run the file, you can generate graphs by
+running the following command:
+```
+python graph_aggregates.py
+```
