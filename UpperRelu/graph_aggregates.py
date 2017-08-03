@@ -6,14 +6,14 @@ datalistA = []
 datalistB = []
 data_loc = './results/'
 for k in range(10):
-	dat_a = np.loadtxt('{}bnorm_test_acc_cifar{}.dat'.format(data_loc,k))
-	dat_b = np.loadtxt('{}test_acc_cifar_upper{}.dat'.format(data_loc,k))
+	dat_a = np.loadtxt('{}bnorm_test_acc{}.dat'.format(data_loc,k))
+	dat_b = np.loadtxt('{}test_acc_upper{}.dat'.format(data_loc,k))
 	
 	#cut off data to a standard length
-	#dat_a = dat_a[0:30,:]
-	#dat_b = dat_b[0:30,:]
-	dat_a = dat_a[0:3000,:]
-	dat_b = dat_b[0:3000,:]
+	dat_a = dat_a[0:30,:]
+	dat_b = dat_b[0:30,:]
+	#dat_a = dat_a[0:3000,:]
+	#dat_b = dat_b[0:3000,:]
 	
 	datalistA.append(dat_a)
 	datalistB.append(dat_b)
