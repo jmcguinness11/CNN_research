@@ -16,6 +16,7 @@ for [Cellular Neural Networks](http://www.scholarpedia.org/article/Cellular_neur
 ```
 
 However, we decided to make Upper ReLU "leaky"
+
 <img src="./UpperRelu.png" alt="CeNN Nonlinearity" width="180">
 ```
 (∞, -1): y = -1 + ⍺(x+1)
