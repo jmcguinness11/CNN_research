@@ -59,7 +59,7 @@ Initial Findings
 After I figured out its potential, I ran some quick initial tests on Upper ReLU.
 Those results are stored in the [InitialFindings](./InitialFindings) folder. 
 
-What We Tested:
+What We Tested
 --------------
 We were confident that Upper ReLU speeds up training time compared to normal or
 leaky ReLU, but before going forward too far, we did a literature search to find
@@ -73,14 +73,16 @@ help. I ran tests on both MNIST and CIFAR-10 for networks with and without
 batch-normalization, pre-normalization, Upper ReLU, ELU, and some combinations 
 thereof, storing the results as numpy data files in the [results](./results) folder.
 
-Some Interesting Results:
--------------------------
+Some Interesting Results
+------------------------
 In all of the following graphs, the network with Upper ReLU is represented in green.
 Training accuracy results are displayed on the right, while independent test
 accuracies are shown on the left.
 
-##### ReLU vs. Upper ReLU
-<img src="./relu_vs_upperrelu.png" alt="ReLU vs. Upper ReLU" width="500">
+##### ReLU vs. Upper ReLU - MNIST
+<img src="./relu_vs_upperrelu.png" alt="ReLU vs. Upper ReLU" width="750">
+##### Batch Normalization (normal ReLU) vs. Upper ReLU - CIFAR
+<img src="./bnorm_vs_upperrelu_cifar.png" alt="B-Norm vs. Upper ReLU" width="750">
 
 
 Using the Graphing File:
