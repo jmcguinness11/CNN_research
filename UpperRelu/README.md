@@ -84,6 +84,7 @@ accuracies are shown on the left.
 
 #### Batch Normalization (normal ReLU) vs. Upper ReLU - CIFAR
 <img src="./bnorm_vs_upperrelu_cifar.png" alt="B-Norm vs. Upper ReLU" width="700">
+
 *These results are particularly interesting.  They suggest that while batch 
 normalization allows a network to learn faster, it badly hurts its ability to learn
 the data.  This is a strange result because the literature seems to show that batch
