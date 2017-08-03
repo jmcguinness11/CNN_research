@@ -4,7 +4,13 @@ is essentially RELU with an upper bound, I call it **"Upper ReLU"**.
 
 What is Upper ReLU?
 -----------------------
-EXPLANATION OF THE TECHNICALS, INCLUDING THE FORMULA.
+Upper ReLU is a nonlinearity that tries to squeeze values between -1 and 1.
+
+\[
+\begin{equation}
+(-\inf, -1): ReLU = -1 + \alpha(x+1)
+\end{equation}
+\]
 
 How did I find this nonlinearity?
 -------------------------------------
