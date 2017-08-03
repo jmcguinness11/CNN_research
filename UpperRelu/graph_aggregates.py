@@ -10,10 +10,10 @@ for k in range(10):
 	dat_b = np.loadtxt('{}test_acc_cifar_upper{}.dat'.format(data_loc,k))
 	
 	#cut off data to a standard length
-	dat_a = dat_a[0:30,:]
-	dat_b = dat_b[0:30,:]
-	#dat_a = dat_a[0:1500,:]
-	#dat_b = dat_b[0:1500,:]
+	#dat_a = dat_a[0:30,:]
+	#dat_b = dat_b[0:30,:]
+	dat_a = dat_a[0:3000,:]
+	dat_b = dat_b[0:3000,:]
 	
 	datalistA.append(dat_a)
 	datalistB.append(dat_b)
@@ -26,8 +26,8 @@ dataB = np.mean(datalistB, 0)
 
 
 #cut off data to a standard length
-dataA = dataA[0:1500,:]
-dataB = dataB[0:1500,:]
+dataA = dataA[0:3000,:]
+dataB = dataB[0:3000,:]
 
 #plot
 plt.plot(dataA[:,0], dataA[:,1],'b-',
