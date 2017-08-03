@@ -15,7 +15,8 @@ for [Cellular Neural Networks](http://www.scholarpedia.org/article/Cellular_neur
 (1, ∞):	 y = 1 - ⍺(x-1)
 ```
 
-However, we decided to make Upper ReLU "leaky"
+However, we decided to make Upper ReLU "leaky" to ensure values don't get stuck
+at the endpoints of -1 and 1.  This regime forces values back into the [-1,1] range.
 
 <img src="./UpperRelu.png" alt="CeNN Nonlinearity" width="180">
 
@@ -23,6 +24,12 @@ However, we decided to make Upper ReLU "leaky"
 (∞, -1): y = -1 + ⍺(x+1)
 [-1, 1]: y = x
 (1, ∞):	 y = 1 - ⍺(x-1)
+```
+This can easily be implemented in TensorFlow as follows:
+```python
+alpha = .01
+ReLU = tf.maximum(-1+alpha*(Input+1), Input)
+ReLU = tf.minimum(1-alpha*(ReLU-1), ReLU)
 ```
 
 
