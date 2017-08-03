@@ -8,7 +8,7 @@ Upper ReLU is a nonlinearity that tries to squeeze values between -1 and 1.
 
 The basic form of Upper ReLU is simple and exactly matches the standard nonlinearity
 for [Cellular Neural Networks](http://www.scholarpedia.org/article/Cellular_neural_network).
-![CeNN Nonlinearity](http://www.scholarpedia.org/w/images/c/c3/CNN_output.png)
+![CeNN Nonlinearity](http://www.scholarpedia.org/w/images/c/c3/CNN_output.png | width=50)
 ```
 (∞, -1): y = -1 + ⍺(x+1)
 [-1, 1]: y = x
