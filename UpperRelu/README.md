@@ -86,7 +86,11 @@ accuracies are shown on the left.
 <img src="./bnorm_vs_upperrelu_cifar.png" alt="B-Norm vs. Upper ReLU" width="700">
 *These results are particularly interesting.  They suggest that while batch 
 normalization allows a network to learn faster, it badly hurts its ability to learn
-the data. It could also be possible that 
+the data.  This is a strange result because the literature seems to show that batch
+normalization is extremely effective, so we would certainly welcome feedback.
+However, we have thoroughly checked our implementation and can find nothing wrong, so
+we believe that with our CNN, batch normalization helps increase train accuracy while
+badly hurting test accuracy.*
 
 Using the Graphing File:
 ------------------------
