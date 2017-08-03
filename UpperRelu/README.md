@@ -108,3 +108,12 @@ running the following command:
 ```
 python graph_aggregates.py
 ```
+
+To look at train data, uncomment the second lines and comment out the first two lines
+under *cut off data to a standard length* (line 13), and to look at the test data, 
+leave it as is (with the first two lines commented out.  The data file names that can
+be examined can be found under [results](./results).  To examine these, change the
+file names under *actual loading* (line 9) with a proper file name.
+
+I apologize for the less than ideal state of this program.  If I have time in the
+future, I will add command line options to this script to make it easier to use.
