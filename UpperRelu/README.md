@@ -116,4 +116,4 @@ be examined can be found under [results](./results).  To examine these, change t
 file names under *actual loading* (line 9) with a proper file name.
 
 I apologize for the less than ideal state of this program.  If I have time in the
-future, I will add command line options to this script to make it easier to use.
+future, I will add command line options to the script to make it easier to use.
