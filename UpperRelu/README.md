@@ -91,7 +91,8 @@ the data.  This is a strange result because the literature seems to show that ba
 normalization is extremely effective, so we would certainly welcome feedback.
 However, we have thoroughly checked our implementation and can find nothing wrong, so
 we believe that with our CNN, batch normalization helps increase train accuracy while
-badly hurting independent test accuracy (a horrible case of overfitting).*
+badly hurting independent test accuracy (a horrible case of overfitting).  Adding
+dropout did not help.*
 
 Using the Graphing File:
 ------------------------
