@@ -41,5 +41,19 @@ prediction is 3 (the fourth number).  These networks without a FCL perform much
 faster than those with a FCL, but there is definitely somewhat of an accuracy
 dropoff.
 
-## Benchmarking
-(Include link to results) (explain why benchmarking)
+## These Files
+Besides [simple_cenn_network.py](./simple_cenn_network.py), which is a CeNN-friendly
+CNN with 5 layers, the files in this folder are variants of one of two versions of
+[AlexNet](http://vision.stanford.edu/teaching/cs231b_spring1415/slides/alexnet_tugce_kyunghee.pdf).  Both versions slightly simplify AlexNet to use input images sized
+128x128 instead of 227x227 so that it can run faster (and because using AlexNet on
+MNIST (28x28 images) and CIFAR-10 (32x32 images) is definitely overkill). The
+**alexnet\_simplified** versions still have the same structure of 5 convolutional
+layers followe by three FCLs, while the **cenn\_friendly** versions replace the
+FCLs with an additional convolutional layer with ten output maps (one for each
+class). The loss/accuracy for the **cenn\_friendly** networks is calculated as
+described above under **Removing the FCL**.  The convolutional and pooling kernel
+sizes were also all changed to 3x3 in this network so it would become CeNN-friendly.
+
+## Results
+I have run tests on each of these files and have the results stored in a private
+Google sheet.  Please inquire if interested.
