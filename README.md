@@ -1,5 +1,5 @@
 # CNN_research
-Summer research at Pázmány Péter Catholic University
+Summer research at Pázmány Péter Catholic University in Budapest, Hungary
 
 ## Collaborators
 My research was funded by a 
