@@ -1,6 +1,8 @@
 # CNN_research
 Summer research at Pázmány Péter Catholic University in Budapest, Hungary
 
+<img src="http://www.budapestagent.com/wp-content/uploads/2011/12/budapest-parliament.jpg" width="700">
+
 ## Collaborators
 My research was funded by a 
 [NSF IRES grant](https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=12831) and
