@@ -13,10 +13,14 @@ TensorFlow, debug and write code, and understand difficult concepts.  We could n
 have done our research without him.
 
 ## Our Toolset
-TF - PYTHON - NP
+We used [TensorFlow](https://www.tensorflow.org) to build and process neural 
+networks. TensorFlow is a python library that integrates very nicely with
+[NumPy](http://www.numpy.org). See [here](https://www.tensorflow.org/get_started/)
+if you are interested in learning to use TensorFlow.
 
 ## Convolutional Neural Networks
-About CNNs:
-BLA BLA BLA
-BLA BLA BLA
-BLA BLA BLA
+All of the networks we created throughout the research experience were Convolutional 
+Neural Networks (CNNs).  CNNs are a type of deep neural network extremely effective 
+at processing, classifying, and recognizing images.  This 
+[blog](https://ujjwalkarn.me/2016/08/11/intuitive-explanation-convnets/) provides
+a very good overview of CNNs.
