@@ -9,7 +9,7 @@ extremely efficient. See
 [here](http://www.scholarpedia.org/article/Cellular_neural_network) for a more in
 depth explanation of CeNNs.
 
-<img src="http://www.scholarpedia.org/w/images/6/64/CNN_2D.png" width="700">
+<img src="http://www.scholarpedia.org/w/images/6/64/CNN_2D.png" width="300">
 
 ## CoNNs and CeNNs
 
