@@ -26,9 +26,11 @@ at processing, classifying, and recognizing images.  This
 a very good overview of CNNs.
 
 ## Our Datasets
-[Omniglot](https://github.com/brendenlake/omniglot): This data can be found in
+* [Omniglot](https://github.com/brendenlake/omniglot): This data can be found in
 [Omniglot_data](./Omniglot_data).
-[MNIST](http://yann.lecun.com/exdb/mnist/): This data can be found in
-[MNIST_data](./MNIST_data).
+
+* [MNIST](http://yann.lecun.com/exdb/mnist/): This data can be found in
+
+* [MNIST_data](./MNIST_data).
 [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html): This data was too large
 to upload to GitHub.
