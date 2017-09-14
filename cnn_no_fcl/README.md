@@ -33,7 +33,7 @@ one-hot-like encoding, so all the maps are negative ones except for one map of a
 ones in the position of the correct label.  For instance, if we are using MNIST and
 the label is 0, the first of the ten maps will be 1s and the rest will be -1s. The
 loss function tries to reduce mean square difference between the output maps and the
-target one-hot maps.  The prediction is determined by assembling a list mean square
+target one-hot maps.  The prediction is determined by assembling a list of mean square
 differences from the output maps to every possible one-hot map and finding the index
 of the smallest difference.  Say, for example, that the smallest difference is
 from the output maps to the one-hot maps with ones in the fourth map, then the
